@@ -1,0 +1,348 @@
+{
+  "info": {
+    "name": "codexbar-api",
+    "_postman_id": "c0dexbar-a01-4api-9000-000000000001",
+    "description": "Authenticated, cached HTTP API over the codexbar CLI exposing AI-provider usage/cost, plus Prometheus metrics.\n\nSet the collection variables (or use the bundled environment):\n- `base_url` — default `http://localhost:3033`\n- `api_token` — must equal the server's `API_TOKEN`\n\n`/v1/*` requests inherit Bearer auth from the collection. `/healthz` and `/metrics` are unauthenticated. See docs/API.md for the full reference.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{api_token}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:3033", "type": "string" },
+    { "key": "api_token", "value": "change-me", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Ops",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/healthz",
+              "host": ["{{base_url}}"],
+              "path": ["healthz"]
+            },
+            "description": "Liveness probe. Unauthenticated. Returns `{ \"status\": \"ok\" }`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('status is ok', () => pm.expect(pm.response.json().status).to.eql('ok'));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_url}}/healthz", "host": ["{{base_url}}"], "path": ["healthz"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "body": "{\n  \"status\": \"ok\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Metrics (Prometheus)",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/metrics",
+              "host": ["{{base_url}}"],
+              "path": ["metrics"]
+            },
+            "description": "Prometheus exposition (text/plain). Unauthenticated. Series include `codexbar_usage_percent`, `codexbar_cost_usd`, `codexbar_scrape_success_total`, `codexbar_scrape_failure_total`, `codexbar_scrape_duration_seconds`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('exposes codexbar metrics', () => pm.expect(pm.response.text()).to.include('codexbar_usage_percent'));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_url}}/metrics", "host": ["{{base_url}}"], "path": ["metrics"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "text",
+              "header": [{ "key": "Content-Type", "value": "text/plain; version=0.0.4; charset=utf-8" }],
+              "body": "# HELP codexbar_usage_percent Provider usage percent (primary window)\n# TYPE codexbar_usage_percent gauge\ncodexbar_usage_percent{provider=\"codex\"} 1\ncodexbar_usage_percent{provider=\"claude\"} 30\ncodexbar_usage_percent{provider=\"zai\"} 6\n# HELP codexbar_cost_usd Provider cost in USD over the window\n# TYPE codexbar_cost_usd gauge\ncodexbar_cost_usd{provider=\"claude\",window=\"30d\"} 42.5"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "v1",
+      "item": [
+        {
+          "name": "Usage — all providers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/usage",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "usage"],
+              "query": [
+                { "key": "provider", "value": "all", "disabled": true, "description": "Optional. A single provider id (e.g. claude, codex, zai) or 'all' (default)." }
+              ]
+            },
+            "description": "Reshaped usage (percent-used + reset windows) per provider. Bearer auth (inherited)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('has providers array', () => pm.expect(b.providers).to.be.an('array'));",
+                  "pm.test('envelope has cached + generatedAt', () => { pm.expect(b).to.have.property('cached'); pm.expect(b).to.have.property('generatedAt'); });"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_url}}/v1/usage?provider=claude", "host": ["{{base_url}}"], "path": ["v1", "usage"], "query": [{ "key": "provider", "value": "claude" }] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "body": "{\n  \"generatedAt\": \"2026-06-06T02:40:39.442Z\",\n  \"cached\": false,\n  \"providers\": [\n    {\n      \"provider\": \"claude\",\n      \"source\": \"oauth\",\n      \"updatedAt\": \"2026-06-06T02:40:39Z\",\n      \"usage\": {\n        \"percent\": 30,\n        \"resetsAt\": \"2026-06-06T06:20:01Z\",\n        \"windows\": {\n          \"primary\": { \"usedPercent\": 30, \"windowMinutes\": 300, \"resetsAt\": \"2026-06-06T06:20:01Z\" },\n          \"secondary\": null,\n          \"tertiary\": null\n        },\n        \"raw\": {}\n      },\n      \"cost\": null,\n      \"error\": null\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Usage — single provider",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/usage?provider=claude",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "usage"],
+              "query": [
+                { "key": "provider", "value": "claude", "description": "Provider id: claude, codex, zai, gemini, …" }
+              ]
+            },
+            "description": "Usage for one provider via the `provider` query param."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('returns the requested provider only', () => { pm.expect(b.providers).to.have.lengthOf(1); pm.expect(b.providers[0].provider).to.eql('claude'); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Cost — default (30d)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/cost",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "cost"],
+              "query": [
+                { "key": "days", "value": "30", "disabled": true, "description": "Optional int 1–365 (default 30). Accepted for compatibility; codexbar ignores it and uses its own ~30d window." },
+                { "key": "provider", "value": "claude", "disabled": true, "description": "Optional. Cost is only supported for claude and codex." }
+              ]
+            },
+            "description": "Reshaped cost over codexbar's local-log window. Only Claude and Codex report cost; Codex usually returns null cost figures."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('has providers array', () => pm.expect(pm.response.json().providers).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_url}}/v1/cost?provider=claude", "host": ["{{base_url}}"], "path": ["v1", "cost"], "query": [{ "key": "provider", "value": "claude" }] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "body": "{\n  \"generatedAt\": \"2026-06-06T02:40:49.609Z\",\n  \"cached\": false,\n  \"providers\": [\n    {\n      \"provider\": \"claude\",\n      \"source\": \"local\",\n      \"updatedAt\": \"2026-06-06T02:40:39Z\",\n      \"usage\": null,\n      \"cost\": {\n        \"window\": \"30d\",\n        \"usd\": 42.5,\n        \"tokens\": { \"total\": 12000000 },\n        \"session\": { \"usd\": 1.2, \"tokens\": 250000 },\n        \"totals\": {\n          \"inputTokens\": 50000,\n          \"outputTokens\": 800000,\n          \"cacheReadTokens\": 11000000,\n          \"cacheCreationTokens\": 150000,\n          \"totalTokens\": 12000000,\n          \"totalCost\": 42.5\n        },\n        \"raw\": {}\n      },\n      \"error\": null\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Cost — custom days & provider",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/cost?days=30&provider=claude",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "cost"],
+              "query": [
+                { "key": "days", "value": "30", "description": "Int 1–365." },
+                { "key": "provider", "value": "claude", "description": "claude or codex." }
+              ]
+            },
+            "description": "Cost for one provider. `days` must be an integer 1–365 or the server returns 400."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('cost window present', () => pm.expect(b.providers[0]).to.have.property('cost'));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Summary (usage + cost)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/summary?days=30",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "summary"],
+              "query": [
+                { "key": "days", "value": "30", "description": "Optional int 1–365 (default 30)." },
+                { "key": "provider", "value": "all", "disabled": true, "description": "Optional single provider id or 'all' (default)." }
+              ]
+            },
+            "description": "Combined usage + cost per provider. Cost present only for providers that support it."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('each entry has usage, cost, error keys', () => b.providers.forEach(p => { pm.expect(p).to.have.property('usage'); pm.expect(p).to.have.property('cost'); pm.expect(p).to.have.property('error'); }));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_url}}/v1/summary", "host": ["{{base_url}}"], "path": ["v1", "summary"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "body": "{\n  \"generatedAt\": \"2026-06-06T02:41:10.745Z\",\n  \"cached\": false,\n  \"providers\": [\n    {\n      \"provider\": \"codex\",\n      \"source\": \"oauth\",\n      \"usage\": { \"percent\": 1, \"resetsAt\": \"2026-06-06T07:41:10Z\", \"windows\": { \"primary\": { \"usedPercent\": 1, \"windowMinutes\": 300 }, \"secondary\": null, \"tertiary\": null }, \"raw\": {} },\n      \"cost\": { \"window\": \"30d\", \"usd\": null, \"tokens\": { \"total\": null }, \"session\": { \"usd\": null, \"tokens\": null }, \"totals\": null, \"raw\": {} },\n      \"error\": null\n    },\n    {\n      \"provider\": \"claude\",\n      \"source\": \"oauth\",\n      \"usage\": { \"percent\": 30, \"resetsAt\": \"2026-06-06T06:20:00Z\", \"windows\": { \"primary\": { \"usedPercent\": 30, \"windowMinutes\": 300 }, \"secondary\": null, \"tertiary\": null }, \"raw\": {} },\n      \"cost\": { \"window\": \"30d\", \"usd\": 42.5, \"tokens\": { \"total\": 12000000 }, \"session\": { \"usd\": 1.2, \"tokens\": 250000 }, \"totals\": {}, \"raw\": {} },\n      \"error\": null\n    },\n    {\n      \"provider\": \"gemini\",\n      \"source\": \"api\",\n      \"updatedAt\": null,\n      \"usage\": { \"percent\": null, \"resetsAt\": null, \"windows\": { \"primary\": null, \"secondary\": null, \"tertiary\": null }, \"raw\": null },\n      \"cost\": null,\n      \"error\": { \"message\": \"codexbar usage --provider gemini --source api --format json failed: …\" }\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Unauthorized (401 example)",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/usage",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "usage"]
+            },
+            "description": "Demonstrates the 401 returned when no/!valid bearer token is sent to a /v1 endpoint."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401 Unauthorized', () => pm.response.to.have.status(401));",
+                  "pm.test('error is unauthorized', () => pm.expect(pm.response.json().error).to.eql('unauthorized'));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_url}}/v1/usage", "host": ["{{base_url}}"], "path": ["v1", "usage"] }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "body": "{\n  \"error\": \"unauthorized\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

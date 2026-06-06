@@ -14,7 +14,11 @@ metrics.
 | GET | `/v1/cost?days=30` | Bearer | Reshaped cost (days 1-365) |
 | GET | `/v1/summary?days=30` | Bearer | Combined usage+cost per provider |
 
-Auth: `Authorization: Bearer $API_TOKEN`.
+Auth: `Authorization: Bearer $API_TOKEN`. All `/v1/*` requests accept an optional `?provider=`
+filter and return a `{ generatedAt, cached, providers[] }` envelope.
+
+**Full API reference:** [`docs/API.md`](docs/API.md) — request params, response schemas, status
+codes, and examples.
 
 ## Quick start
 
@@ -60,3 +64,10 @@ npm install
 npm test                  # runs against a stub codexbar binary, no creds needed
 ./scripts/smoke.sh        # build + boot + curl assertions
 ```
+
+## Testing with Postman
+
+A ready-to-use collection lives in [`postman/`](postman/): import
+`codexbar-api.postman_collection.json` and `codexbar-api.postman_environment.json`, set
+`api_token` to your `API_TOKEN`, and send requests (or run the whole collection with the
+Collection Runner — each request carries test assertions). See [`postman/README.md`](postman/README.md).
