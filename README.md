@@ -1,10 +1,20 @@
-# codexbar-api
+# TokenBurn
+
+A web-baased usage meter and api to visualise how fast you are burning through your ai tokens. Under the hood it
+uses codexbar-cli to get the data, this is baked into the codexbar-api docker container with an api wrapped 
+around it. Then we have a pretty web ui to see the numbers.
+
+![Desktop screenshot](./screenshots/tokenburn-desktop-dark.png)
+
+## Services
+
+### codexbar-api
 
 A Docker container that runs the [codexbar](https://github.com/steipete/codexbar) Linux CLI
 and exposes AI-provider usage/cost data as an authenticated, cached HTTP API with Prometheus
 metrics.
 
-## Endpoints
+#### Endpoints
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
@@ -20,7 +30,7 @@ filter and return a `{ generatedAt, cached, providers[] }` envelope.
 **Full API reference:** [`docs/API.md`](docs/API.md) — request params, response schemas, status
 codes, and examples.
 
-## Quick start
+#### Quick start
 
 ```bash
 cp .env.example .env      # set API_TOKEN (+ any API-key providers)
@@ -37,7 +47,7 @@ Two compose files are provided:
 - **`docker-compose.dev.yml`** — builds both images from source:
   `docker compose -f docker-compose.dev.yml up --build`.
 
-## Web UI (TokenBurn)
+### Web UI (TokenBurn)
 
 A second image (`webui/`) serves **TokenBurn**, a responsive dashboard for the usage/cost data.
 It adapts to the viewport — a **Grid** of provider cards on mobile (≤768px) and a sidebar
@@ -66,7 +76,7 @@ Behavior worth knowing:
   "No local cost data" note instead of a spend chart/breakdown (codexbar reads cost from
   Claude/Codex CLI logs only — see the Codex note under Configuration).
 
-## Configuration
+#### Configuration
 
 Two credential models, used together:
 
