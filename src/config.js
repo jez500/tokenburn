@@ -1,3 +1,5 @@
+import { oauthProvidersFromEnv } from './source-map.js';
+
 export function loadConfig(env = process.env) {
   const apiToken = env.API_TOKEN;
   if (!apiToken) {
@@ -14,5 +16,6 @@ export function loadConfig(env = process.env) {
     execTimeoutMs: Number(env.EXEC_TIMEOUT_MS || 30000),
     codexbarBin: env.CODEXBAR_BIN || 'codexbar',
     providers,
+    oauthProviders: oauthProvidersFromEnv(env),
   };
 }

@@ -28,3 +28,14 @@ test('loadConfig overrides from env', () => {
 test('loadConfig throws when API_TOKEN missing', () => {
   assert.throws(() => loadConfig({}), /API_TOKEN is required/);
 });
+
+test('loadConfig defaults oauthProviders to claude,codex', () => {
+  const cfg = loadConfig({ API_TOKEN: 't' });
+  assert.ok(cfg.oauthProviders instanceof Set);
+  assert.deepEqual([...cfg.oauthProviders].sort(), ['claude', 'codex']);
+});
+
+test('loadConfig honors CODEXBAR_OAUTH_PROVIDERS override', () => {
+  const cfg = loadConfig({ API_TOKEN: 't', CODEXBAR_OAUTH_PROVIDERS: 'claude' });
+  assert.deepEqual([...cfg.oauthProviders], ['claude']);
+});
