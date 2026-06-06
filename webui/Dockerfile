@@ -1,7 +1,10 @@
 # syntax=docker/dockerfile:1
 
 # ---- Stage 1: build the static bundle ----
-FROM node:20-alpine AS build
+# Pin to the native build platform: npm ci + esbuild produce arch-neutral
+# static assets, so running them under QEMU emulation (e.g. for arm64) would be
+# pathologically slow. The per-arch work happens only in the runtime stage.
+FROM --platform=$BUILDPLATFORM node:20-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
