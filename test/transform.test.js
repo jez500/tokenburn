@@ -115,3 +115,48 @@ test('transformUsage extra is [] when no extraRateWindows', () => {
   const out = transformUsage({ provider: 'codex', usage: {} });
   assert.deepEqual(out[0].usage.extra, []);
 });
+
+test('transformCost maps daily series with per-model breakdown', () => {
+  const raw = [{
+    provider: 'claude', historyDays: 30, last30DaysCostUSD: 10,
+    daily: [
+      { date: '2026-06-05', totalCost: 3.5, totalTokens: 1000,
+        modelBreakdowns: [{ modelName: 'claude-opus-4-8', cost: 3.5, totalTokens: 1000 }] },
+      { date: '2026-06-06', totalCost: 6.5, totalTokens: 2000,
+        modelBreakdowns: [
+          { modelName: 'claude-opus-4-8', cost: 4.0, totalTokens: 1200 },
+          { modelName: 'claude-sonnet-4-6', cost: 2.5, totalTokens: 800 },
+        ] },
+    ],
+  }];
+  const [c] = transformCost(raw, 30);
+  assert.equal(c.cost.daily.length, 2);
+  assert.deepEqual(c.cost.daily[0], {
+    date: '2026-06-05', usd: 3.5, tokens: 1000,
+    models: [{ name: 'claude-opus-4-8', usd: 3.5, tokens: 1000 }],
+  });
+});
+
+test('transformCost aggregates cost.models across the window, sorted by spend', () => {
+  const raw = [{
+    provider: 'claude', last30DaysCostUSD: 10,
+    daily: [
+      { date: '2026-06-05', modelBreakdowns: [{ modelName: 'claude-opus-4-8', cost: 3.5, totalTokens: 1000 }] },
+      { date: '2026-06-06', modelBreakdowns: [
+        { modelName: 'claude-opus-4-8', cost: 4.0, totalTokens: 1200 },
+        { modelName: 'claude-sonnet-4-6', cost: 2.5, totalTokens: 800 },
+      ] },
+    ],
+  }];
+  const [c] = transformCost(raw, 30);
+  assert.deepEqual(c.cost.models, [
+    { name: 'claude-opus-4-8', usd: 7.5, tokens: 2200 },
+    { name: 'claude-sonnet-4-6', usd: 2.5, tokens: 800 },
+  ]);
+});
+
+test('transformCost yields empty daily/models when daily absent (e.g. Codex)', () => {
+  const [c] = transformCost([{ provider: 'codex', daily: [] }], 30);
+  assert.deepEqual(c.cost.daily, []);
+  assert.deepEqual(c.cost.models, []);
+});

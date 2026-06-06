@@ -42,6 +42,33 @@ export function transformUsage(raw) {
   });
 }
 
+function mapDaily(daily) {
+  if (!Array.isArray(daily)) return [];
+  return daily.map((d) => ({
+    date: d.date ?? null,
+    usd: d.totalCost ?? null,
+    tokens: d.totalTokens ?? null,
+    models: (Array.isArray(d.modelBreakdowns) ? d.modelBreakdowns : []).map((m) => ({
+      name: m.modelName ?? null,
+      usd: m.cost ?? null,
+      tokens: m.totalTokens ?? null,
+    })),
+  }));
+}
+
+function aggregateModels(daily) {
+  const acc = new Map();
+  for (const d of Array.isArray(daily) ? daily : []) {
+    for (const m of Array.isArray(d.modelBreakdowns) ? d.modelBreakdowns : []) {
+      const cur = acc.get(m.modelName) || { name: m.modelName ?? null, usd: 0, tokens: 0 };
+      cur.usd += m.cost ?? 0;
+      cur.tokens += m.totalTokens ?? 0;
+      acc.set(m.modelName, cur);
+    }
+  }
+  return [...acc.values()].sort((a, b) => b.usd - a.usd);
+}
+
 export function transformCost(raw, days) {
   return toArray(raw).map((p) => {
     const historyDays = p.historyDays ?? days;
@@ -58,6 +85,8 @@ export function transformCost(raw, days) {
             tokens: { total: p.last30DaysTokens ?? null },
             session: { usd: p.sessionCostUSD ?? null, tokens: p.sessionTokens ?? null },
             totals: p.totals ?? null,
+            daily: mapDaily(p.daily),
+            models: aggregateModels(p.daily),
             raw: p,
           },
       error: p.error ?? null,
