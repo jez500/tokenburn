@@ -19,16 +19,39 @@ Auth: `Authorization: Bearer $API_TOKEN`.
 ## Quick start
 
 ```bash
-cp .env.example .env      # set API_TOKEN and your provider keys
-docker compose up --build
-curl -H "Authorization: Bearer $API_TOKEN" localhost:3000/v1/summary
+cp .env.example .env      # set API_TOKEN (+ any API-key providers)
+# Ensure you're logged in on the host: `claude setup-token` and `codex` login.
+docker compose up --build # mounts ~/.claude and ~/.codex read-write
+curl -H "Authorization: Bearer $API_TOKEN" localhost:3033/v1/summary
 ```
 
 ## Configuration
 
-See `.env.example`. Provider keys map to codexbar providers: `OPENAI_ADMIN_KEY`->codex,
-`ANTHROPIC_ADMIN_KEY`->claude, `GEMINI_API_KEY`->gemini, `ZAI_API_KEY`->z.ai. Browser-cookie
-providers are not supported in a headless container.
+Two credential models, used together:
+
+**OAuth subscription plans (Claude Code Pro/Max, OpenAI Codex/ChatGPT)** — no API key.
+Log in once on the host (`claude setup-token` and `codex` login), then mount the host
+credential dirs read-write. `docker-compose.yml` mounts `~/.claude` and `~/.codex` into the
+container, which runs as **uid 1000** (the base image's `node` user) so it can read and
+refresh those `600`-mode files. This requires the host user to be uid 1000.
+
+- Usage is fetched with `--source oauth`; tokens self-refresh and persist back to the host
+  files. `/v1/usage` and `/v1/summary` report each plan's percent-used and reset windows.
+- Cost (`/v1/cost`, `/v1/summary`) is **only available for Claude and Codex** (codexbar reads
+  local native logs) over a fixed ~30-day window. The `?days=` query param is accepted for
+  compatibility but does not change codexbar's window. Codex keeps no local cost logs, so its
+  cost fields are null.
+- `CODEXBAR_OAUTH_PROVIDERS` (default `claude,codex`) decides each provider's auth mode:
+  providers in the list use the OAuth/mount path; others use the API-key path.
+- If Claude ever returns a `user:profile` scope error, run `claude setup-token` on the host to
+  mint a scoped token.
+
+**API-key providers** — set the matching env var (`GEMINI_API_KEY`, `ZAI_API_KEY`, or the
+`OPENAI_ADMIN_KEY`/`ANTHROPIC_ADMIN_KEY` admin keys). These are provisioned via
+`codexbar config set-api-key` at boot and queried with `--source api`. To use admin keys for
+codex/claude, remove them from `CODEXBAR_OAUTH_PROVIDERS`.
+
+See `.env.example` for the full list.
 
 ## Development
 
