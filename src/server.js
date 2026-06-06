@@ -1,0 +1,60 @@
+import express from 'express';
+import { bearerAuth } from './auth.js';
+import { Service } from './service.js';
+import { Metrics } from './metrics.js';
+
+function parseDays(raw) {
+  if (raw === undefined) return 30;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1 || n > 365) return null;
+  return n;
+}
+
+export function createApp(config) {
+  const app = express();
+  const metrics = new Metrics();
+  const service = new Service(config, metrics);
+
+  app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
+
+  app.get('/metrics', async (req, res) => {
+    res.set('Content-Type', metrics.registry.contentType);
+    res.end(await metrics.registry.metrics());
+  });
+
+  const v1 = express.Router();
+  v1.use(bearerAuth(config.apiToken));
+
+  const provider = (req) => req.query.provider || 'all';
+
+  v1.get('/usage', async (req, res) => {
+    try {
+      res.json(await service.getUsage(provider(req)));
+    } catch (e) {
+      res.status(502).json({ error: e.message });
+    }
+  });
+
+  v1.get('/cost', async (req, res) => {
+    const days = parseDays(req.query.days);
+    if (days === null) return res.status(400).json({ error: 'days must be an integer 1-365' });
+    try {
+      res.json(await service.getCost(days, provider(req)));
+    } catch (e) {
+      res.status(502).json({ error: e.message });
+    }
+  });
+
+  v1.get('/summary', async (req, res) => {
+    const days = parseDays(req.query.days);
+    if (days === null) return res.status(400).json({ error: 'days must be an integer 1-365' });
+    try {
+      res.json(await service.getSummary(days, provider(req)));
+    } catch (e) {
+      res.status(502).json({ error: e.message });
+    }
+  });
+
+  app.use('/v1', v1);
+  return app;
+}
