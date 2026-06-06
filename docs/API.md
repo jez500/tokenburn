@@ -46,8 +46,9 @@ A missing or incorrect token returns `401`:
 ## Conventions
 
 - **`provider` query param** (optional, on all `/v1/*`): restrict the response to a single
-  provider id (e.g. `claude`, `codex`, `zai`, `gemini`). Omit it, or pass `provider=all`
-  (the default), to return every provider in `CODEXBAR_PROVIDERS`.
+  provider id (e.g. `claude`, `codex`, `zai`, `gemini`). Must be one of the configured providers
+  or `all`; an unknown value returns `400`. Omit it, or pass `provider=all` (the default), to
+  return every provider in `CODEXBAR_PROVIDERS` (default `codex,claude,gemini,z.ai`).
 - **Per-provider isolation:** each provider is queried independently. A single provider failing
   is reported as an `error` object on that provider's entry — it does **not** fail the whole
   response. (Exception: if *every* provider fails on `/v1/usage`, the request returns `502`.)
@@ -148,6 +149,8 @@ curl -H "Authorization: Bearer $API_TOKEN" \
       "usage": {
         "percent": 30,
         "resetsAt": "2026-06-06T06:20:01Z",
+        "plan": "Claude Max",
+        "extra": [{ "id": "claude-routines", "title": "Daily Routines", "percent": 0, "windowMinutes": 10080 }],
         "windows": {
           "primary":   { "usedPercent": 30, "windowMinutes": 300, "resetsAt": "2026-06-06T06:20:01Z", "resetDescription": "Jun 6 at 6:20AM" },
           "secondary": { "usedPercent": 6,  "windowMinutes": 10080, "resetsAt": "2026-06-12T20:00:00Z" },
@@ -168,8 +171,9 @@ curl -H "Authorization: Bearer $API_TOKEN" \
 
 Reshaped cost over codexbar's local-log window. **Only Claude and Codex** report cost
 (codexbar reads their native session logs); other providers are omitted from `provider=all`,
-or — if requested explicitly — return an `error` entry. Codex usually has no local cost logs,
-so its cost figures are `null`.
+or — if requested explicitly — return an `error` entry. Codex cost is derived from
+**Codex CLI** session logs (`~/.codex/sessions`), so it appears only if you've used the Codex
+CLI locally within the ~30-day window; otherwise its cost figures come back `null`.
 
 | | |
 |---|---|
@@ -210,6 +214,13 @@ curl -H "Authorization: Bearer $API_TOKEN" \
           "totalTokens": 12000000,
           "totalCost": 42.5
         },
+        "daily": [
+          { "date": "2026-06-06", "usd": 6.25, "tokens": 1800000, "models": [{ "name": "claude-opus-4-8", "usd": 6.25, "tokens": 1800000 }] }
+        ],
+        "models": [
+          { "name": "claude-opus-4-8", "usd": 30.1, "tokens": 9000000 },
+          { "name": "claude-sonnet-4-6", "usd": 12.4, "tokens": 3000000 }
+        ],
         "raw": { "…": "verbatim codexbar cost payload" }
       },
       "error": null
@@ -217,6 +228,8 @@ curl -H "Authorization: Bearer $API_TOKEN" \
   ]
 }
 ```
+
+> Example figures above are illustrative placeholders, not real account data.
 
 ---
 
@@ -255,7 +268,7 @@ curl -H "Authorization: Bearer $API_TOKEN" \
       "source": "oauth",
       "updatedAt": "2026-06-06T02:41:10Z",
       "usage": { "percent": 30, "resetsAt": "2026-06-06T06:20:00Z", "plan": "Claude Max", "extra": [{ "id": "claude-routines", "title": "Daily Routines", "percent": 0, "windowMinutes": 10080 }], "windows": { "primary": { "usedPercent": 30, "windowMinutes": 300 }, "secondary": null, "tertiary": null }, "raw": { "…": "…" } },
-      "cost":  { "window": "30d", "usd": 42.5, "tokens": { "total": 12000000 }, "session": { "usd": 1.2, "tokens": 250000 }, "totals": { "…": "…" }, "daily": [{ "date": "2026-06-06", "usd": 32.0, "tokens": 250000, "models": [{ "name": "claude-opus-4-8", "usd": 30.5, "tokens": 35000000 }] }], "models": [{ "name": "claude-opus-4-8", "usd": 980.2, "tokens": 1.2e9 }], "raw": { "…": "…" } },
+      "cost":  { "window": "30d", "usd": 42.5, "tokens": { "total": 12000000 }, "session": { "usd": 1.2, "tokens": 250000 }, "totals": { "…": "…" }, "daily": [{ "date": "2026-06-06", "usd": 6.25, "tokens": 1800000, "models": [{ "name": "claude-opus-4-8", "usd": 6.25, "tokens": 1800000 }] }], "models": [{ "name": "claude-opus-4-8", "usd": 30.1, "tokens": 9000000 }], "raw": { "…": "…" } },
       "error": null
     },
     {
@@ -264,7 +277,7 @@ curl -H "Authorization: Bearer $API_TOKEN" \
       "updatedAt": null,
       "usage": { "percent": null, "resetsAt": null, "windows": { "primary": null, "secondary": null, "tertiary": null }, "raw": null },
       "cost": null,
-      "error": { "message": "codexbar usage --provider gemini --source api --format json failed: …" }
+      "error": { "message": "codexbar usage failed: …" }
     }
   ]
 }
