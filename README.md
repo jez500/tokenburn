@@ -29,6 +29,29 @@ docker compose up --build # mounts ~/.claude and ~/.codex read-write
 curl -H "Authorization: Bearer $API_TOKEN" localhost:3033/v1/summary
 ```
 
+## Web UI (TokenBurn)
+
+A second image (`webui/`) serves **TokenBurn**, a responsive dashboard for the usage/cost data,
+with three layouts (Console / Grid / Stack), dark/light mode, and 60-second auto-refresh.
+
+```bash
+docker compose up --build        # starts both codexbar-api and webui
+open http://localhost:8080        # the dashboard
+```
+
+The web container never exposes your `API_TOKEN` to the browser — it proxies `/api/summary`
+to `codexbar-api` server-side and injects the bearer token. Configure via env:
+
+| Var | Default | Purpose |
+|-----|---------|---------|
+| `API_BASE_URL` | `http://codexbar-api:3000` | Upstream API base URL |
+| `API_TOKEN` | (from `.env`) | Bearer token for the upstream API |
+| `PORT` | `3000` | Web server port inside the container |
+
+Sections render only when a provider actually reports the data (e.g. Codex has no local cost
+logs, so its spend chart and per-model breakdown are hidden; providers without credentials show
+an error state).
+
 ## Configuration
 
 Two credential models, used together:
