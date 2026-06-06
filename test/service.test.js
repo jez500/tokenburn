@@ -110,3 +110,11 @@ test('getUsage throws (→502) only when ALL providers fail', async () => {
   const svc = makeService({ providers: ['claude', 'codex'] }, { run });
   await assert.rejects(() => svc.getUsage(), /total outage/);
 });
+
+test('getSummary does not throw (stays best-effort) when every provider fails', async () => {
+  const run = async () => { throw new Error('everything down'); };
+  const svc = makeService({ providers: ['claude', 'codex'] }, { run });
+  const res = await svc.getSummary(30);
+  assert.equal(res.providers.length, 2);
+  assert.ok(res.providers.every((p) => p.error));
+});

@@ -69,3 +69,15 @@ test('exec failure surfaces as 502', async () => {
   assert.equal(res.status, 502);
   assert.ok(res.body.error);
 });
+
+test('unknown provider returns 400', async () => {
+  const res = await request(app()).get('/v1/usage?provider=bogus').set('Authorization', 'Bearer secret');
+  assert.equal(res.status, 400);
+  assert.match(res.body.error, /unknown provider/);
+});
+
+test('responses carry basic security headers', async () => {
+  const res = await request(app()).get('/healthz');
+  assert.equal(res.headers['x-content-type-options'], 'nosniff');
+  assert.equal(res.headers['x-frame-options'], 'DENY');
+});

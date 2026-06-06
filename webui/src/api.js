@@ -5,6 +5,8 @@ export const PROVIDER_META = {
   codex: { name: 'OpenAI', accent: '#10a37f', glyph: '◍' },
   gemini: { name: 'Gemini', accent: '#4587f0', glyph: '✦' },
   zai: { name: 'Z.AI', accent: '#8b5cf6', glyph: '◆' },
+  // codexbar emits the id as "zai", but accept the config spelling "z.ai" too.
+  'z.ai': { name: 'Z.AI', accent: '#8b5cf6', glyph: '◆' },
 };
 
 /* ---- formatters (mirror the prototype's tb-data.js) ---- */

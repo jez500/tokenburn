@@ -45,3 +45,10 @@ test('GET /api/summary maps an upstream failure to 502', async () => {
   assert.ok(res.body.error);
   up.server.close();
 });
+
+test('GET /api/summary returns 502 when the upstream is unreachable', async () => {
+  const app = createApp({ apiBaseUrl: 'http://127.0.0.1:1', apiToken: 't' });
+  const res = await request(app).get('/api/summary');
+  assert.equal(res.status, 502);
+  assert.ok(res.body.error);
+});

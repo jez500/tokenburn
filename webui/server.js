@@ -8,6 +8,13 @@ export function createApp(config) {
   const apiBaseUrl = config.apiBaseUrl.replace(/\/$/, '');
   const app = express();
 
+  app.use((req, res, next) => {
+    res.set('X-Content-Type-Options', 'nosniff');
+    res.set('X-Frame-Options', 'DENY');
+    res.set('Referrer-Policy', 'no-referrer');
+    next();
+  });
+
   app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
 
   app.get('/api/summary', async (req, res) => {

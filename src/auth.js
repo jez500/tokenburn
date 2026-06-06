@@ -3,8 +3,10 @@ import { timingSafeEqual } from 'node:crypto';
 function safeEqual(a, b) {
   const ab = Buffer.from(a);
   const bb = Buffer.from(b);
-  if (ab.length !== bb.length) return false;
-  return timingSafeEqual(ab, bb);
+  // Always run a constant-time compare against an equal-length buffer so the
+  // length of the expected token can't be inferred from response timing.
+  const ref = ab.length === bb.length ? bb : Buffer.alloc(ab.length);
+  return timingSafeEqual(ab, ref) && ab.length === bb.length;
 }
 
 export function bearerAuth(token) {
