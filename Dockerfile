@@ -36,10 +36,11 @@ COPY src ./src
 COPY entrypoint.sh ./entrypoint.sh
 RUN chmod +x entrypoint.sh
 
-# non-root
-RUN useradd --create-home --uid 10001 app
-USER app
-ENV HOME=/home/app
+# Run as the base image's built-in node user (uid 1000) so codexbar's getpwuid
+# home resolution lands on /home/node, where host ~/.claude and ~/.codex mount.
+RUN mkdir -p /home/node/.codexbar && chown -R node:node /home/node/.codexbar
+USER node
+ENV HOME=/home/node
 ENV PORT=3000
 EXPOSE 3000
 
