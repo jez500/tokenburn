@@ -135,9 +135,3 @@ export function mapProvider(entry, now = Date.now()) {
 export function mapProviders(envelope, now = Date.now()) {
   return (envelope?.providers || []).map((e) => mapProvider(e, now));
 }
-
-export async function fetchSummary() {
-  const res = await fetch('/api/summary');
-  if (!res.ok) throw new Error('summary request failed (' + res.status + ')');
-  return res.json();
-}

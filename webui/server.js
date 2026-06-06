@@ -40,6 +40,10 @@ export function startServer() {
     apiToken: process.env.API_TOKEN || '',
     port: Number(process.env.PORT) || 3000,
   };
+  if (!config.apiToken) {
+    // eslint-disable-next-line no-console
+    console.warn('WARNING: API_TOKEN is not set — every /api/summary call will return 502');
+  }
   const app = createApp(config);
   app.listen(config.port, () => {
     // eslint-disable-next-line no-console

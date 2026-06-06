@@ -254,8 +254,8 @@ curl -H "Authorization: Bearer $API_TOKEN" \
       "provider": "claude",
       "source": "oauth",
       "updatedAt": "2026-06-06T02:41:10Z",
-      "usage": { "percent": 30, "resetsAt": "2026-06-06T06:20:00Z", "windows": { "primary": { "usedPercent": 30, "windowMinutes": 300 }, "secondary": null, "tertiary": null }, "raw": { "…": "…" } },
-      "cost":  { "window": "30d", "usd": 42.5, "tokens": { "total": 12000000 }, "session": { "usd": 1.2, "tokens": 250000 }, "totals": { "…": "…" }, "raw": { "…": "…" } },
+      "usage": { "percent": 30, "resetsAt": "2026-06-06T06:20:00Z", "plan": "Claude Max", "extra": [{ "id": "claude-routines", "title": "Daily Routines", "percent": 0, "windowMinutes": 10080 }], "windows": { "primary": { "usedPercent": 30, "windowMinutes": 300 }, "secondary": null, "tertiary": null }, "raw": { "…": "…" } },
+      "cost":  { "window": "30d", "usd": 42.5, "tokens": { "total": 12000000 }, "session": { "usd": 1.2, "tokens": 250000 }, "totals": { "…": "…" }, "daily": [{ "date": "2026-06-06", "usd": 32.0, "tokens": 250000, "models": [{ "name": "claude-opus-4-8", "usd": 30.5, "tokens": 35000000 }] }], "models": [{ "name": "claude-opus-4-8", "usd": 980.2, "tokens": 1.2e9 }], "raw": { "…": "…" } },
       "error": null
     },
     {
