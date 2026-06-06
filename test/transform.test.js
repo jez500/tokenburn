@@ -54,3 +54,30 @@ test('mergeUsageCost combines by provider id', () => {
   assert.equal(merged[0].usage.percent, 28);
   assert.equal(merged[0].cost.usd, 9);
 });
+
+test('transformCost uses real historyDays for window and passes through totals', () => {
+  const raw = [{
+    provider: 'claude', source: 'local', historyDays: 30,
+    last30DaysCostUSD: 42.5, last30DaysTokens: 12000000,
+    sessionCostUSD: 1.2, sessionTokens: 250000,
+    totals: { totalCost: 42.5, totalTokens: 12000000 },
+  }];
+  const [c] = transformCost(raw, 7); // requested days=7, but binary reports 30
+  assert.equal(c.cost.window, '30d');
+  assert.equal(c.cost.usd, 42.5);
+  assert.equal(c.cost.tokens.total, 12000000);
+  assert.equal(c.cost.session.usd, 1.2);
+  assert.deepEqual(c.cost.totals, { totalCost: 42.5, totalTokens: 12000000 });
+});
+
+test('transformCost falls back to requested days when historyDays absent', () => {
+  const [c] = transformCost([{ provider: 'codex' }], 30);
+  assert.equal(c.cost.window, '30d');
+  assert.equal(c.cost.usd, null);
+});
+
+test('transformCost yields null cost (not numbers) for an error entry', () => {
+  const [c] = transformCost([{ provider: 'zai', error: { message: 'unsupported' } }], 30);
+  assert.equal(c.cost, null);
+  assert.deepEqual(c.error, { message: 'unsupported' });
+});

@@ -28,20 +28,26 @@ export function transformUsage(raw) {
 }
 
 export function transformCost(raw, days) {
-  return toArray(raw).map((p) => ({
-    provider: p.provider ?? null,
-    source: p.source ?? null,
-    updatedAt: p.updatedAt ?? null,
-    usage: null,
-    cost: {
-      window: `${days}d`,
-      usd: p.last30DaysCostUSD ?? null,
-      tokens: { total: p.last30DaysTokens ?? null },
-      session: { usd: p.sessionCostUSD ?? null, tokens: p.sessionTokens ?? null },
-      raw: p,
-    },
-    error: p.error ?? null,
-  }));
+  return toArray(raw).map((p) => {
+    const historyDays = p.historyDays ?? days;
+    return {
+      provider: p.provider ?? null,
+      source: p.source ?? null,
+      updatedAt: p.updatedAt ?? null,
+      usage: null,
+      cost: p.error
+        ? null
+        : {
+            window: `${historyDays}d`,
+            usd: p.last30DaysCostUSD ?? null,
+            tokens: { total: p.last30DaysTokens ?? null },
+            session: { usd: p.sessionCostUSD ?? null, tokens: p.sessionTokens ?? null },
+            totals: p.totals ?? null,
+            raw: p,
+          },
+      error: p.error ?? null,
+    };
+  });
 }
 
 export function mergeUsageCost(usageEntries, costEntries) {
