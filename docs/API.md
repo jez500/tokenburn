@@ -296,6 +296,8 @@ curl -H "Authorization: Bearer $API_TOKEN" \
 |---|---|---|
 | `percent` | number \| null | Primary-window used percent (0–100) |
 | `resetsAt` | string \| null | When the primary window resets |
+| `plan` | string \| null | Subscription plan label (codexbar `loginMethod`), e.g. `"Claude Max"`, `"plus"` |
+| `extra` | array | Extra rate windows: `[{ id, title, percent, windowMinutes }]` (e.g. Claude "Daily Routines"); `[]` when none |
 | `windows.primary` / `.secondary` / `.tertiary` | object \| null | Verbatim codexbar window objects (`usedPercent`, `windowMinutes`, `resetsAt`, …) |
 | `raw` | object \| null | Verbatim codexbar `usage` payload |
 
@@ -307,6 +309,8 @@ curl -H "Authorization: Bearer $API_TOKEN" \
 | `tokens.total` | number \| null | Total tokens over the window |
 | `session.usd` / `session.tokens` | number \| null | Current-session cost / tokens |
 | `totals` | object \| null | Token breakdown (`inputTokens`, `outputTokens`, `cacheReadTokens`, `cacheCreationTokens`, `totalTokens`, `totalCost`) |
+| `daily` | array | Per-day series `[{ date, usd, tokens, models: [{ name, usd, tokens }] }]`; `[]` when codexbar has no local logs (e.g. Codex) |
+| `models` | array | Per-model totals aggregated across the window `[{ name, usd, tokens }]`, sorted by `usd` desc; `[]` when no daily data |
 | `raw` | object \| null | Verbatim codexbar `cost` payload |
 
 ### Error
