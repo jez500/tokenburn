@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Stub codexbar: echoes canned JSON based on the subcommand ($1).
+DIR="$(cd "$(dirname "$0")" && pwd)"
+case "$1" in
+  usage) cat "$DIR/usage.sample.json" ;;
+  cost)  cat "$DIR/cost.sample.json" ;;
+  *) echo "{}" ;;
+esac

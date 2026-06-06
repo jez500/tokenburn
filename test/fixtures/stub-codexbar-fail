@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+echo "boom: provider auth failed" >&2
+exit 3
