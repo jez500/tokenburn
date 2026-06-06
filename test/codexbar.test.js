@@ -10,7 +10,7 @@ const stubFail = join(here, 'fixtures', 'stub-codexbar-fail');
 
 test('runCodexbar parses usage JSON', async () => {
   const out = await runCodexbar(stub, ['usage', '--format', 'json'], 5000);
-  assert.equal(out.provider, 'codex');
+  assert.equal(out[0].provider, 'codex');
 });
 
 test('runCodexbar parses cost JSON array', async () => {

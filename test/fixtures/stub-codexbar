@@ -1,8 +1,24 @@
 #!/usr/bin/env bash
-# Stub codexbar: echoes canned JSON based on the subcommand ($1).
-DIR="$(cd "$(dirname "$0")" && pwd)"
-case "$1" in
-  usage) cat "$DIR/usage.sample.json" ;;
-  cost)  cat "$DIR/cost.sample.json" ;;
+# Stub codexbar for tests: reflects --provider/--source into canned JSON and
+# rejects --days exactly like the real v0.32.4 binary (which has no --days).
+cmd="${1:-}"; shift || true
+provider=""; source=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --provider) provider="$2"; shift 2 ;;
+    --source)   source="$2";   shift 2 ;;
+    --days)     echo '[{"provider":"cli","source":"cli","error":{"kind":"args","message":"Unknown option --days","code":1}}]'; exit 1 ;;
+    *) shift ;;
+  esac
+done
+provider="${provider:-codex}"
+case "$cmd" in
+  usage)
+    source="${source:-oauth}"
+    printf '[{"provider":"%s","source":"%s","usage":{"primary":{"usedPercent":28,"resetsAt":"2026-06-06T12:00:00Z","windowMinutes":300},"updatedAt":"2026-06-06T11:58:00Z"}}]' "$provider" "$source"
+    ;;
+  cost)
+    printf '[{"provider":"%s","source":"local","historyDays":30,"last30DaysCostUSD":12.34,"last30DaysTokens":50000,"sessionCostUSD":0.5,"sessionTokens":1000,"totals":{"totalCost":12.34,"totalTokens":50000}}]' "$provider"
+    ;;
   *) echo "{}" ;;
 esac

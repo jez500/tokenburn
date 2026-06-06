@@ -13,6 +13,7 @@ function app() {
   return createApp({
     apiToken: 'secret', codexbarBin: stub, providers: ['codex'],
     cacheTtlMs: 1000, execTimeoutMs: 5000,
+    oauthProviders: new Set(['claude', 'codex']),
   });
 }
 
@@ -33,10 +34,10 @@ test('GET /v1/usage with token returns reshaped data', async () => {
   assert.equal(res.body.providers[0].usage.percent, 28);
 });
 
-test('GET /v1/cost?days=7 returns cost window 7d', async () => {
+test('GET /v1/cost?days=7 reports the binary window (30d), ignoring ?days', async () => {
   const res = await request(app()).get('/v1/cost?days=7').set('Authorization', 'Bearer secret');
   assert.equal(res.status, 200);
-  assert.equal(res.body.providers[0].cost.window, '7d');
+  assert.equal(res.body.providers[0].cost.window, '30d');
 });
 
 test('GET /v1/summary merges usage and cost', async () => {
@@ -62,6 +63,7 @@ test('exec failure surfaces as 502', async () => {
   const failApp = createApp({
     apiToken: 'secret', codexbarBin: stubFail, providers: ['codex'],
     cacheTtlMs: 1000, execTimeoutMs: 5000,
+    oauthProviders: new Set(['claude', 'codex']),
   });
   const res = await request(failApp).get('/v1/usage').set('Authorization', 'Bearer secret');
   assert.equal(res.status, 502);
