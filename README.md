@@ -88,6 +88,27 @@ codex/claude, remove them from `CODEXBAR_OAUTH_PROVIDERS`.
 
 See `.env.example` for the full list.
 
+## Container images & releases
+
+CI (`.github/workflows/ci.yml`) runs the test suites and builds **both** images on every push
+and PR. On a version tag (`v*`), it builds multi-arch (`amd64` + `arm64`) and **pushes to Docker
+Hub**:
+
+- `docker.io/<DOCKERHUB_USERNAME>/codexbar-api`
+- `docker.io/<DOCKERHUB_USERNAME>/tokenburn-webui`
+
+Tagged `:{version}`, `:{major}.{minor}`, and `:latest`.
+
+**One-time setup** — add two repository secrets (Settings → Secrets and variables → Actions):
+`DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` (a Docker Hub access token with write scope).
+
+**Cut a release:**
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0    # triggers the build-and-push
+```
+
 ## Security notes
 
 - `/v1/*` requires the bearer `API_TOKEN` (constant-time compared). `/healthz` and `/metrics`
