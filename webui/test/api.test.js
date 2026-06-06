@@ -110,3 +110,36 @@ test('visibleProviders hides providers that errored (unconfigured)', () => {
   assert.deepEqual(visibleProviders([]), []);
   assert.deepEqual(visibleProviders(null), []);
 });
+
+test('mapProvider selects session/weekly by window duration, not slot (Z.AI ordering)', () => {
+  // Z.AI: primary = 1-week (7%), secondary = monthly (no windowMinutes), tertiary = 5h (13%)
+  const vm = mapProvider({
+    provider: 'zai',
+    usage: {
+      windows: {
+        primary: { usedPercent: 7, windowMinutes: 10080, resetsAt: '2026-06-08T00:00:00Z' },
+        secondary: { usedPercent: 0, resetsAt: '2026-07-05T00:00:00Z' },
+        tertiary: { usedPercent: 13, windowMinutes: 300, resetsAt: '2026-06-06T17:00:00Z' },
+      },
+    },
+    cost: null,
+  }, NOW);
+  assert.equal(vm.session.pct, 13); // the 5h window
+  assert.equal(vm.weekly.pct, 7);   // the 1-week window
+});
+
+test('mapProvider keeps Claude/Codex ordering (5h in primary, weekly in secondary)', () => {
+  const vm = mapProvider({
+    provider: 'claude',
+    usage: {
+      windows: {
+        primary: { usedPercent: 34, windowMinutes: 300, resetsAt: '2026-06-06T15:00:00Z' },
+        secondary: { usedPercent: 8, windowMinutes: 10080, resetsAt: '2026-06-12T20:00:00Z' },
+        tertiary: { usedPercent: 4, windowMinutes: 10080, resetsAt: '2026-06-12T20:00:00Z' },
+      },
+    },
+    cost: null,
+  }, NOW);
+  assert.equal(vm.session.pct, 34); // 5h primary
+  assert.equal(vm.weekly.pct, 8);   // first 1-week window (secondary), not tertiary
+});

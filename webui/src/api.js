@@ -100,15 +100,36 @@ export function modelsFromCost(cost, topN = 4) {
   return cost.models.slice(0, topN).map((m) => ({ name: prettyModel(m.name), pct: ((m.usd || 0) / total) * 100 }));
 }
 
+const WEEK_MINUTES = 10080;
+
+// codexbar orders usage windows differently per provider (e.g. Z.AI puts its
+// 1-week window in `primary` and its 5h window in `tertiary`). Select the two
+// meters the dashboard shows by window DURATION, not slot position:
+//   session = the shortest-duration window (e.g. the ~5h limit)
+//   weekly  = the ~1-week (10080 min) window
+export function pickWindows(u) {
+  const all = [u?.windows?.primary, u?.windows?.secondary, u?.windows?.tertiary]
+    .filter((w) => w && w.usedPercent != null);
+  let session = null;
+  for (const w of all) {
+    if (w.windowMinutes == null) continue; // undurated windows can't be the session
+    if (!session || w.windowMinutes < session.windowMinutes) session = w;
+  }
+  const weekly =
+    all.find((w) => w !== session && w.windowMinutes === WEEK_MINUTES) ||
+    all.find((w) => w !== session && w.windowMinutes != null && w.windowMinutes >= 1440) ||
+    null;
+  return { session, weekly };
+}
+
 export function mapProvider(entry, now = Date.now()) {
   const meta = PROVIDER_META[entry.provider] || { name: entry.provider, accent: '#4f8df7', glyph: '○' };
   const u = entry.usage;
-  const primary = u?.windows?.primary;
-  const secondary = u?.windows?.secondary;
-  const session = primary && primary.usedPercent != null
-    ? { pct: primary.usedPercent, resetsIn: fmtReset(primary.resetsAt, now) } : null;
-  const weekly = secondary && secondary.usedPercent != null
-    ? { pct: secondary.usedPercent, resetsIn: fmtReset(secondary.resetsAt, now), pace: computePace(secondary, now) } : null;
+  const { session: sw, weekly: ww } = pickWindows(u);
+  const session = sw
+    ? { pct: sw.usedPercent, resetsIn: fmtReset(sw.resetsAt, now) } : null;
+  const weekly = ww
+    ? { pct: ww.usedPercent, resetsIn: fmtReset(ww.resetsAt, now), pace: computePace(ww, now) } : null;
   const extraWin = u?.extra?.[0];
   const cost = entry.cost;
   return {
