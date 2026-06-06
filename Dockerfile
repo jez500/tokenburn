@@ -23,8 +23,10 @@ RUN set -eux; \
     /opt/codexbar --help >/dev/null 2>&1 || true
 
 # ---- Stage 2: runtime ----
-FROM node:20-bookworm-slim AS runtime
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+# Debian 13 (trixie) for glibc >= 2.38 (codexbar v0.32.4 requires GLIBC_2.38);
+# bookworm's 2.36 is too old. libcurl4 + libsqlite3-0 are codexbar's runtime deps.
+FROM node:20-trixie-slim AS runtime
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates libcurl4 libsqlite3-0 && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 COPY --from=codexbar /opt/codexbar /usr/local/bin/codexbar
