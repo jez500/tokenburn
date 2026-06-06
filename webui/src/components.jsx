@@ -132,11 +132,11 @@ export function ProviderDetail({ p, dense }) {
         </>
       )}
 
-      {(p.cost.today || p.cost.last30 || p.spend14) && (
-        <>
-          <div className="rule" />
-          <div className="cost">
-            <div className="sec-label">Cost</div>
+      <div className="rule" />
+      <div className="cost">
+        <div className="sec-label">Cost</div>
+        {(p.cost.today || p.cost.last30 || p.spend14) ? (
+          <>
             <div className="cost__rows">
               {p.cost.today && (
                 <div className="cost__row">
@@ -159,9 +159,11 @@ export function ProviderDetail({ p, dense }) {
                 <MiniBars data={p.spend14} accent={p.accent} />
               </div>
             )}
-          </div>
-        </>
-      )}
+          </>
+        ) : (
+          <div className="cost__none mono faint">No local cost data — codexbar reads cost from Claude/Codex CLI logs only.</div>
+        )}
+      </div>
     </div>
   );
 }
