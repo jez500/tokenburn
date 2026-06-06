@@ -44,3 +44,20 @@ test('failed loads are not cached', async () => {
   await assert.rejects(cache.getOrLoad('k', loader));
   assert.equal(calls, 2);
 });
+
+test('concurrent failing loads all reject and do not poison the key', async () => {
+  const cache = new TtlCache(1000);
+  let calls = 0;
+  const failing = () => new Promise((_res, rej) => setTimeout(() => { calls++; rej(new Error('boom')); }, 20));
+  const results = await Promise.allSettled([
+    cache.getOrLoad('k', failing),
+    cache.getOrLoad('k', failing),
+  ]);
+  assert.equal(calls, 1); // coalesced into a single loader invocation
+  assert.ok(results.every((r) => r.status === 'rejected'));
+  // key not poisoned: a later call re-invokes the loader
+  let ok = 0;
+  const value = await cache.getOrLoad('k', async () => { ok++; return 42; });
+  assert.equal(value, 42);
+  assert.equal(ok, 1);
+});
