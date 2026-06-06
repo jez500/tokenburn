@@ -1,0 +1,23 @@
+{
+  "name": "tokenburn-webui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "node build.js",
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "supertest": "^7.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "@fontsource/space-grotesk": "^5.1.0",
+    "@fontsource/jetbrains-mono": "^5.1.0"
+  }
+}
