@@ -81,3 +81,37 @@ test('transformCost yields null cost (not numbers) for an error entry', () => {
   assert.equal(c.cost, null);
   assert.deepEqual(c.error, { message: 'unsupported' });
 });
+
+test('transformUsage surfaces plan from loginMethod', () => {
+  const out = transformUsage({
+    provider: 'claude',
+    usage: { primary: { usedPercent: 34 }, loginMethod: 'Claude Max', identity: { loginMethod: 'Claude Max' } },
+  });
+  assert.equal(out[0].usage.plan, 'Claude Max');
+});
+
+test('transformUsage falls back to identity.loginMethod, else null', () => {
+  const viaIdentity = transformUsage({ provider: 'codex', usage: { identity: { loginMethod: 'plus' } } });
+  assert.equal(viaIdentity[0].usage.plan, 'plus');
+  const none = transformUsage({ provider: 'zai', usage: {} });
+  assert.equal(none[0].usage.plan, null);
+});
+
+test('transformUsage maps extraRateWindows to extra[]', () => {
+  const out = transformUsage({
+    provider: 'claude',
+    usage: {
+      extraRateWindows: [
+        { id: 'claude-routines', title: 'Daily Routines', window: { usedPercent: 7, windowMinutes: 10080 } },
+      ],
+    },
+  });
+  assert.deepEqual(out[0].usage.extra, [
+    { id: 'claude-routines', title: 'Daily Routines', percent: 7, windowMinutes: 10080 },
+  ]);
+});
+
+test('transformUsage extra is [] when no extraRateWindows', () => {
+  const out = transformUsage({ provider: 'codex', usage: {} });
+  assert.deepEqual(out[0].usage.extra, []);
+});

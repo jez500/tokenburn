@@ -4,6 +4,19 @@ function toArray(raw) {
   return [];
 }
 
+function mapExtra(u) {
+  const list = Array.isArray(u.extraRateWindows) ? u.extraRateWindows : [];
+  return list.map((e) => {
+    const w = e.window || {};
+    return {
+      id: e.id ?? null,
+      title: e.title ?? null,
+      percent: w.usedPercent ?? null,
+      windowMinutes: w.windowMinutes ?? null,
+    };
+  });
+}
+
 export function transformUsage(raw) {
   return toArray(raw).map((p) => {
     const u = p.usage || {};
@@ -14,6 +27,8 @@ export function transformUsage(raw) {
       usage: {
         percent: u.primary?.usedPercent ?? null,
         resetsAt: u.primary?.resetsAt ?? null,
+        plan: u.loginMethod ?? u.identity?.loginMethod ?? null,
+        extra: mapExtra(u),
         windows: {
           primary: u.primary ?? null,
           secondary: u.secondary ?? null,
