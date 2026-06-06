@@ -1,3 +1,6 @@
 node_modules/
 .env
 *.log
+
+# internal planning artifacts (kept locally, not published)
+docs/superpowers/
