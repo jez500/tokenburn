@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fmtUSD, fmtTok, mapProviders, visibleProviders } from './api.js';
-import { Bar, MiniBars, StatusDot, ProviderDetail, ProviderCard, ProviderRow } from './components.jsx';
+import { ProviderDetail, ProviderCard, ProviderRow } from './components.jsx';
 
 const POLL_MS = 60000;
 
@@ -10,6 +10,20 @@ function useStickyState(key, def) {
   });
   useEffect(() => { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} }, [key, v]);
   return [v, setV];
+}
+
+function useMediaQuery(query) {
+  const get = () => (typeof window !== 'undefined' && window.matchMedia ? window.matchMedia(query).matches : false);
+  const [matches, setMatches] = useState(get);
+  useEffect(() => {
+    if (!window.matchMedia) return undefined;
+    const mql = window.matchMedia(query);
+    const on = () => setMatches(mql.matches);
+    on();
+    mql.addEventListener('change', on);
+    return () => mql.removeEventListener('change', on);
+  }, [query]);
+  return matches;
 }
 
 function useSummary() {
@@ -55,8 +69,7 @@ function Summary({ providers }) {
   );
 }
 
-function Header({ theme, setTheme, dir, setDir, onRefresh, loading, count }) {
-  const dirs = [['console', 'Console'], ['grid', 'Grid'], ['stack', 'Stack']];
+function Header({ theme, setTheme, onRefresh, loading, count }) {
   return (
     <header className="hdr">
       <div className="hdr__brand">
@@ -65,11 +78,6 @@ function Header({ theme, setTheme, dir, setDir, onRefresh, loading, count }) {
         <span className="brand__tag mono faint">{count} {count === 1 ? 'provider' : 'providers'}</span>
       </div>
       <div className="hdr__right">
-        <div className="seg" role="tablist" aria-label="Layout">
-          {dirs.map(([id, label]) => (
-            <button key={id} className={'seg__btn' + (dir === id ? ' seg__btn--on' : '')} onClick={() => setDir(id)}>{label}</button>
-          ))}
-        </div>
         <button className={'iconbtn' + (loading ? ' iconbtn--spin' : '')} onClick={onRefresh} aria-label="Refresh" title="Refresh">↻</button>
         <button className="iconbtn" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label="Toggle theme" title="Toggle theme">
           {theme === 'dark' ? '☀' : '☾'}
@@ -117,48 +125,6 @@ function GridView({ providers }) {
   );
 }
 
-function StackRow({ p, open, onToggle }) {
-  return (
-    <div className={'srow' + (open ? ' srow--open' : '')} style={{ '--pa': p.accent }}>
-      <button className="srow__bar" onClick={onToggle}>
-        <div className="srow__id">
-          <span className="glyph" style={{ color: p.accent }}>{p.glyph}</span>
-          <span className="srow__name">{p.name}</span>
-          <StatusDot status={p.status} />
-          {p.plan && <span className="plan mono">{p.plan}</span>}
-        </div>
-        <div className="srow__meters">
-          <div className="srow__m">
-            <div className="srow__mtop"><span className="faint mono">SESSION</span><span className="mono">{p.session ? Math.round(p.session.pct) + '%' : '—'}</span></div>
-            <Bar value={p.session?.pct ?? 0} accent={p.accent} height={6} />
-          </div>
-          <div className="srow__m">
-            <div className="srow__mtop"><span className="faint mono">WEEKLY</span><span className="mono">{p.weekly ? Math.round(p.weekly.pct) + '%' : '—'}</span></div>
-            <Bar value={p.weekly?.pct ?? 0} accent={p.accent} tone={p.weekly?.pace?.state} height={6} />
-          </div>
-        </div>
-        <div className="srow__cost">
-          <span className="num">{p.cost.last30 ? fmtUSD(p.cost.last30.usd) : '—'}</span>
-          <span className="faint mono">30d</span>
-        </div>
-        <div className="srow__spark">{p.spend14 && <MiniBars data={p.spend14} accent={p.accent} height={28} />}</div>
-        <span className="srow__chev mono">{open ? '−' : '+'}</span>
-      </button>
-      {open && <div className="srow__detail"><ProviderDetail p={p} dense /></div>}
-    </div>
-  );
-}
-
-function StackView({ providers, sel, setSel }) {
-  return (
-    <div className="stack">
-      {providers.map((x) => (
-        <StackRow key={x.id} p={x} open={sel === x.id} onToggle={() => setSel(sel === x.id ? null : x.id)} />
-      ))}
-    </div>
-  );
-}
-
 function SetupHelp() {
   return (
     <div className="setup">
@@ -177,9 +143,10 @@ function SetupHelp() {
 
 export function App() {
   const [theme, setTheme] = useStickyState('tb.theme', 'dark');
-  const [dir, setDir] = useStickyState('tb.dir', 'console');
   const [sel, setSel] = useStickyState('tb.sel', 'claude');
   const { providers, loading, error, updatedAt, reload } = useSummary();
+  // Mobile gets the grid; desktop gets the console. No manual layout switch.
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   useEffect(() => { document.documentElement.setAttribute('data-theme', theme); }, [theme]);
 
@@ -189,7 +156,7 @@ export function App() {
 
   return (
     <div className="app">
-      <Header theme={theme} setTheme={setTheme} dir={dir} setDir={setDir} onRefresh={reload} loading={loading} count={visible.length} />
+      <Header theme={theme} setTheme={setTheme} onRefresh={reload} loading={loading} count={visible.length} />
 
       {error && <div className="statebar statebar--error">⚠ Couldn't load usage data: {error}</div>}
       {initialLoading && !error && <div className="statebar">Loading usage…</div>}
@@ -200,9 +167,9 @@ export function App() {
         <>
           <Summary providers={visible} />
           <div className="body">
-            {dir === 'console' && <ConsoleView providers={visible} sel={sel} setSel={setSel} />}
-            {dir === 'grid' && <GridView providers={visible} />}
-            {dir === 'stack' && <StackView providers={visible} sel={sel} setSel={setSel} />}
+            {isMobile
+              ? <GridView providers={visible} />
+              : <ConsoleView providers={visible} sel={sel} setSel={setSel} />}
           </div>
           {updatedAt && <div className="lastupd mono" style={{ marginTop: 16 }}>Updated {new Date(updatedAt).toLocaleTimeString()}</div>}
         </>
