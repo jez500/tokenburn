@@ -17,6 +17,9 @@ mkdirSync('public/fonts', { recursive: true });
 
 cpSync('src/index.html', 'public/index.html');
 cpSync('src/styles.css', 'public/styles.css');
+cpSync('src/manifest.webmanifest', 'public/manifest.webmanifest');
+cpSync('src/icon.svg', 'public/icon.svg');
+cpSync('src/sw.js', 'public/sw.js');
 
 for (const f of FONTS) {
   const pkgDir = f.startsWith('space-grotesk') ? FONT_PKG['space-grotesk'] : FONT_PKG['jetbrains-mono'];

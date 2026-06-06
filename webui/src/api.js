@@ -135,3 +135,9 @@ export function mapProvider(entry, now = Date.now()) {
 export function mapProviders(envelope, now = Date.now()) {
   return (envelope?.providers || []).map((e) => mapProvider(e, now));
 }
+
+// Providers that errored (e.g. missing API key, not logged in) are treated as
+// unconfigured and hidden from the dashboard.
+export function visibleProviders(list) {
+  return (list || []).filter((p) => !p.error);
+}

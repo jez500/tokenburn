@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   fmtUSD, fmtTok, pct, fmtReset, computePace, buildSpend14, deriveToday,
-  statusFromPct, mapProvider,
+  statusFromPct, mapProvider, visibleProviders,
 } from '../src/api.js';
 
 const NOW = Date.parse('2026-06-06T12:00:00Z');
@@ -97,4 +97,16 @@ test('mapProvider degrades gracefully for an errored/empty provider', () => {
   assert.equal(vm.models, null);
   assert.equal(vm.spend14, null);
   assert.equal(vm.cost.last30, null);
+});
+
+test('visibleProviders hides providers that errored (unconfigured)', () => {
+  const list = [
+    { id: 'claude', error: null },
+    { id: 'gemini', error: 'codexbar usage failed' },
+    { id: 'zai', error: null },
+  ];
+  const out = visibleProviders(list);
+  assert.deepEqual(out.map((p) => p.id), ['claude', 'zai']);
+  assert.deepEqual(visibleProviders([]), []);
+  assert.deepEqual(visibleProviders(null), []);
 });

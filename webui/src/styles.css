@@ -56,12 +56,12 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .seg{display:flex; background:var(--panel); border:1px solid var(--border); border-radius:9px; padding:3px;}
 .seg__btn{border:0; background:transparent; color:var(--dim); font-size:13px; font-weight:500; padding:6px 13px; border-radius:6px; transition:.15s;}
 .seg__btn:hover{color:var(--text);}
-.seg__btn--on{background:var(--accent-soft); color:var(--accent);}
+.seg__btn--on{background:var(--track-2); color:var(--text);}
 .iconbtn{width:36px; height:36px; border:1px solid var(--border); background:var(--panel); color:var(--text); border-radius:9px; font-size:15px; display:grid; place-items:center; transition:.15s;}
 .iconbtn:hover{border-color:var(--border-2); background:var(--panel-2);}
 
 /* ============================================================ summary */
-.sum{display:grid; grid-template-columns:repeat(5,1fr); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; margin-bottom:20px;}
+.sum{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; margin-bottom:20px;}
 .sum__item{background:var(--panel); padding:14px 18px;}
 .sum__k{font-size:10.5px; letter-spacing:.1em;}
 .sum__v{font-size:23px; margin-top:5px; letter-spacing:-.02em;}
@@ -199,3 +199,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .skeleton::after{content:''; position:absolute; inset:0; transform:translateX(-100%); background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--text) 6%,transparent),transparent); animation:sweep 1.2s infinite;}
 @keyframes sweep{100%{transform:translateX(100%);}}
 .lastupd{font-size:11.5px; color:var(--faint);}
+.setup{background:var(--panel); border:1px solid var(--border); border-radius:var(--r-lg); box-shadow:var(--shadow); padding:30px 28px; max-width:640px; margin:8px auto;}
+.setup__title{font-size:18px; font-weight:600; letter-spacing:-.02em; margin-bottom:10px;}
+.setup__body{font-size:13.5px; color:var(--dim); margin:0 0 12px;}
+.setup__list{font-size:12.5px; color:var(--dim); line-height:1.7; margin:0 0 12px; padding-left:18px;}
+.setup__list .num{color:var(--text); background:var(--panel-2); border:1px solid var(--border); border-radius:5px; padding:1px 5px; font-size:12px;}

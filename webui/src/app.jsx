@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { fmtUSD, fmtTok, mapProviders } from './api.js';
+import { fmtUSD, fmtTok, mapProviders, visibleProviders } from './api.js';
 import { Bar, MiniBars, StatusDot, ProviderDetail, ProviderCard, ProviderRow } from './components.jsx';
 
 const POLL_MS = 60000;
@@ -50,20 +50,19 @@ function Summary({ providers }) {
       <Item k="SPEND · 30D" v={fmtUSD(m30, 0)} />
       <Item k="SPEND · TODAY" v={fmtUSD(today, 2)} />
       <Item k="TOKENS · 30D" v={fmtTok(tok)} />
-      <Item k="PROVIDERS" v={providers.length} />
       <Item k="NEAR LIMIT" v={alerts} accent={alerts ? 'var(--bad)' : null} />
     </div>
   );
 }
 
-function Header({ theme, setTheme, dir, setDir, onRefresh, loading }) {
+function Header({ theme, setTheme, dir, setDir, onRefresh, loading, count }) {
   const dirs = [['console', 'Console'], ['grid', 'Grid'], ['stack', 'Stack']];
   return (
     <header className="hdr">
       <div className="hdr__brand">
         <span className="logo">◢◤</span>
         <span className="brand__name">TokenBurn</span>
-        <span className="brand__tag mono faint">usage · all providers</span>
+        <span className="brand__tag mono faint">{count} {count === 1 ? 'provider' : 'providers'}</span>
       </div>
       <div className="hdr__right">
         <div className="seg" role="tablist" aria-label="Layout">
@@ -160,6 +159,22 @@ function StackView({ providers, sel, setSel }) {
   );
 }
 
+function SetupHelp() {
+  return (
+    <div className="setup">
+      <div className="setup__title">No providers configured</div>
+      <p className="setup__body">
+        TokenBurn shows usage for providers the API can reach. To add one, either:
+      </p>
+      <ul className="setup__list mono">
+        <li>Set a provider API key in the API's <span className="num">.env</span> — e.g. <span className="num">GEMINI_API_KEY</span> or <span className="num">ZAI_API_KEY</span>.</li>
+        <li>Use a subscription plan: log in on the host (<span className="num">claude setup-token</span>, <span className="num">codex</span> login) and mount <span className="num">~/.claude</span> / <span className="num">~/.codex</span> into the API container.</li>
+      </ul>
+      <p className="setup__body faint">See the project README for the full setup.</p>
+    </div>
+  );
+}
+
 export function App() {
   const [theme, setTheme] = useStickyState('tb.theme', 'dark');
   const [dir, setDir] = useStickyState('tb.dir', 'console');
@@ -168,20 +183,26 @@ export function App() {
 
   useEffect(() => { document.documentElement.setAttribute('data-theme', theme); }, [theme]);
 
+  // Hide providers that errored (e.g. unconfigured / missing API key).
+  const visible = visibleProviders(providers);
+  const initialLoading = loading && providers.length === 0;
+
   return (
     <div className="app">
-      <Header theme={theme} setTheme={setTheme} dir={dir} setDir={setDir} onRefresh={reload} loading={loading} />
+      <Header theme={theme} setTheme={setTheme} dir={dir} setDir={setDir} onRefresh={reload} loading={loading} count={visible.length} />
 
       {error && <div className="statebar statebar--error">⚠ Couldn't load usage data: {error}</div>}
-      {loading && providers.length === 0 && !error && <div className="statebar">Loading usage…</div>}
+      {initialLoading && !error && <div className="statebar">Loading usage…</div>}
 
-      {providers.length > 0 && (
+      {!error && !initialLoading && visible.length === 0 && <SetupHelp />}
+
+      {visible.length > 0 && (
         <>
-          <Summary providers={providers} />
+          <Summary providers={visible} />
           <div className="body">
-            {dir === 'console' && <ConsoleView providers={providers} sel={sel} setSel={setSel} />}
-            {dir === 'grid' && <GridView providers={providers} />}
-            {dir === 'stack' && <StackView providers={providers} sel={sel} setSel={setSel} />}
+            {dir === 'console' && <ConsoleView providers={visible} sel={sel} setSel={setSel} />}
+            {dir === 'grid' && <GridView providers={visible} />}
+            {dir === 'stack' && <StackView providers={visible} sel={sel} setSel={setSel} />}
           </div>
           {updatedAt && <div className="lastupd mono" style={{ marginTop: 16 }}>Updated {new Date(updatedAt).toLocaleTimeString()}</div>}
         </>

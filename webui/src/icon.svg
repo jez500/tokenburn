@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="TokenBurn">
+  <rect width="512" height="512" rx="96" fill="#0c0d10"/>
+  <path d="M176 168 L256 256 L176 344 Z" fill="#4f8df7"/>
+  <path d="M336 168 L256 256 L336 344 Z" fill="#6ea2f9"/>
+</svg>
