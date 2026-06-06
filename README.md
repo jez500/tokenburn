@@ -66,8 +66,10 @@ refresh those `600`-mode files. This requires the host user to be uid 1000.
   files. `/v1/usage` and `/v1/summary` report each plan's percent-used and reset windows.
 - Cost (`/v1/cost`, `/v1/summary`) is **only available for Claude and Codex** (codexbar reads
   local native logs) over a fixed ~30-day window. The `?days=` query param is accepted for
-  compatibility but does not change codexbar's window. In practice codexbar currently reports no
-  local cost logs for Codex, so its cost fields come back null.
+  compatibility but does not change codexbar's window. Codex cost/tokens are derived from the
+  **Codex CLI** session logs in `~/.codex/sessions`, so they only appear if you've used the
+  Codex CLI locally within that ~30-day window — usage through the Codex cloud/IDE doesn't write
+  those logs, in which case Codex cost comes back null even though its usage limits still report.
 - `CODEXBAR_OAUTH_PROVIDERS` (default `claude,codex`) decides each provider's auth mode:
   providers in the list use the OAuth/mount path; others use the API-key path.
 - If Claude ever returns a `user:profile` scope error, run `claude setup-token` on the host to
