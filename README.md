@@ -31,8 +31,10 @@ curl -H "Authorization: Bearer $API_TOKEN" localhost:3033/v1/summary
 
 ## Web UI (TokenBurn)
 
-A second image (`webui/`) serves **TokenBurn**, a responsive dashboard for the usage/cost data,
-with three layouts (Console / Grid / Stack), dark/light mode, and 60-second auto-refresh.
+A second image (`webui/`) serves **TokenBurn**, a responsive dashboard for the usage/cost data.
+It adapts to the viewport — a **Grid** of provider cards on mobile (≤768px) and a sidebar
+**Console** with a detail panel on desktop — with dark/light mode, 60-second auto-refresh plus a
+manual refresh button, and is **installable as a PWA** (web app manifest + service worker).
 
 ```bash
 docker compose up --build        # starts both codexbar-api and webui
@@ -46,11 +48,15 @@ to `codexbar-api` server-side and injects the bearer token. Configure via env:
 |-----|---------|---------|
 | `API_BASE_URL` | `http://codexbar-api:3000` | Upstream API base URL |
 | `API_TOKEN` | (from `.env`) | Bearer token for the upstream API |
-| `PORT` | `3000` | Web server port inside the container |
+| `PORT` | `3000` | Web server port inside the container (host `8080` via compose) |
 
-Sections render only when a provider actually reports the data (e.g. Codex has no local cost
-logs, so its spend chart and per-model breakdown are hidden; providers without credentials show
-an error state).
+Behavior worth knowing:
+- **Unconfigured providers are hidden.** A provider that errors (missing API key, not logged in)
+  is dropped from the dashboard; if none are reachable, a setup-help screen explains how to add
+  credentials. The brand shows the count of configured providers.
+- **Sections render only when data exists.** A provider with no local cost logs shows a short
+  "No local cost data" note instead of a spend chart/breakdown (codexbar reads cost from
+  Claude/Codex CLI logs only — see the Codex note under Configuration).
 
 ## Configuration
 
@@ -81,6 +87,18 @@ refresh those `600`-mode files. This requires the host user to be uid 1000.
 codex/claude, remove them from `CODEXBAR_OAUTH_PROVIDERS`.
 
 See `.env.example` for the full list.
+
+## Security notes
+
+- `/v1/*` requires the bearer `API_TOKEN` (constant-time compared). `/healthz` and `/metrics`
+  are **unauthenticated** by design (liveness probe + Prometheus scraper). `/metrics` exposes
+  per-provider cost/usage gauges, so **don't publish the API port to an untrusted network** —
+  keep it on a private network or behind a reverse proxy / scraper-only ACL.
+- The web UI keeps `API_TOKEN` server-side; the browser only talks to the web container's
+  `/api/summary`.
+- The host credential dirs (`~/.claude`, `~/.codex`) are mounted read-write because codexbar
+  refreshes OAuth tokens in place; the container runs as a non-root user (uid 1000).
+- Never commit your real `.env` (it's gitignored). Rotate any key that has been shared.
 
 ## Development
 
