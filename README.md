@@ -25,9 +25,17 @@ codes, and examples.
 ```bash
 cp .env.example .env      # set API_TOKEN (+ any API-key providers)
 # Ensure you're logged in on the host: `claude setup-token` and `codex` login.
-docker compose up --build # mounts ~/.claude and ~/.codex read-write
+docker compose up -d      # pulls published jez500 images; mounts ~/.claude and ~/.codex
 curl -H "Authorization: Bearer $API_TOKEN" localhost:3033/v1/summary
 ```
+
+Two compose files are provided:
+
+- **`docker-compose.yml`** (default) — runs the published Docker Hub images
+  (`jez500/codexbar-api`, `jez500/tokenburn-webui`). No build step. Pin a version with
+  `TAG=0.1.0 docker compose up -d` (defaults to `latest`); `docker compose pull` to update.
+- **`docker-compose.dev.yml`** — builds both images from source:
+  `docker compose -f docker-compose.dev.yml up --build`.
 
 ## Web UI (TokenBurn)
 
@@ -37,7 +45,7 @@ It adapts to the viewport — a **Grid** of provider cards on mobile (≤768px) 
 manual refresh button, and is **installable as a PWA** (web app manifest + service worker).
 
 ```bash
-docker compose up --build        # starts both codexbar-api and webui
+docker compose up -d              # starts both codexbar-api and webui
 open http://localhost:8080        # the dashboard
 ```
 

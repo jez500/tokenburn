@@ -1,7 +1,10 @@
 services:
   codexbar-api:
-    image: jez500/codexbar-api:${TAG:-latest}
-    pull_policy: always
+    build:
+      context: .
+      args:
+        CODEXBAR_VERSION: v0.32.4
+    image: codexbar-api:dev
     env_file: .env
     ports:
       - "3033:3000"
@@ -17,8 +20,9 @@ services:
       retries: 3
 
   webui:
-    image: jez500/tokenburn-webui:${TAG:-latest}
-    pull_policy: always
+    build:
+      context: ./webui
+    image: tokenburn-webui:dev
     environment:
       API_BASE_URL: http://codexbar-api:3000
       API_TOKEN: ${API_TOKEN}
