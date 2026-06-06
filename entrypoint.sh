@@ -17,7 +17,9 @@ export HOME="${HOME:-/home/node}"
 mkdir -p "$HOME/.codexbar"
 
 # Providers that authenticate via mounted OAuth token files (no API key).
-OAUTH_PROVIDERS="${CODEXBAR_OAUTH_PROVIDERS:-claude,codex}"
+# Single-dash default: only an UNSET var falls back to claude,codex; an explicit
+# empty string means "no OAuth providers", matching src/source-map.js semantics.
+OAUTH_PROVIDERS="${CODEXBAR_OAUTH_PROVIDERS-claude,codex}"
 
 is_oauth() {
   case ",$OAUTH_PROVIDERS," in *",$1,"*) return 0 ;; *) return 1 ;; esac
