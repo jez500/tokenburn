@@ -39,7 +39,10 @@ set -uo pipefail
 
 log() { printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"; }
 
-rsync_opts=(-a --prune-empty-dirs --include='*/' --include='*.jsonl' --exclude='*')
+# -a without owner/group: don't attempt chown/chgrp on the remote (avoids errors
+# when the remote user isn't root or uids/gids differ). Add --no-perms too if you
+# hit permission errors.
+rsync_opts=(-rlptD --no-owner --no-group --prune-empty-dirs --include='*/' --include='*.jsonl' --exclude='*')
 [ -n "${SSH_KEY}" ] && rsync_opts+=(-e "ssh -i ${SSH_KEY}")
 
 rc=0
