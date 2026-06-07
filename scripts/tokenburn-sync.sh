@@ -39,11 +39,13 @@ set -uo pipefail
 
 log() { printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"; }
 
-# Sync contents only — no owner/group/permission metadata. This avoids
-# chown/chgrp/chmod errors on remotes where the user isn't root, uids/gids
+# Sync contents only — no owner/group/permission/time metadata. Avoids
+# chown/chgrp/chmod/chtimes errors on remotes where the user isn't root, uids/gids
 # differ, or the target filesystem doesn't support them (e.g. SMB/CIFS mounts).
-# Remote files just take the destination's default perms; codexbar only reads them.
-rsync_opts=(-rltD --no-owner --no-group --no-perms --prune-empty-dirs --include='*/' --include='*.jsonl' --exclude='*')
+# --size-only keeps it incremental without relying on mtimes (session logs are
+# append-only, so their size changes whenever they grow). Files take the
+# destination's default perms; codexbar only reads them.
+rsync_opts=(-rlD --no-owner --no-group --no-perms --no-times --size-only --prune-empty-dirs --include='*/' --include='*.jsonl' --exclude='*')
 [ -n "${SSH_KEY}" ] && rsync_opts+=(-e "ssh -i ${SSH_KEY}")
 
 rc=0
