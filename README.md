@@ -129,21 +129,32 @@ targets must be the dirs mounted into the server's `codexbar-api` container (its
 > **limits/windows** come live from the providers' APIs (OAuth/API key), not these files; only
 > **cost/tokens** need syncing. Log the server in separately for the windows.
 
-Example crontab entries (every 15 min — `crontab -e`). Replace `LOCALUSER`, `REMOTEUSER`, and
-`SERVER`; cost uses a ~30-day window so frequent syncing isn't needed:
+### Sync script
 
-```cron
-# Claude session logs → server
-*/15 * * * * rsync -aq --prune-empty-dirs --include='*/' --include='*.jsonl' --exclude='*' /home/LOCALUSER/.claude/projects/ REMOTEUSER@SERVER:/home/REMOTEUSER/.claude/projects/ >> /home/LOCALUSER/.tokenburn-sync.log 2>&1
+[`scripts/tokenburn-sync.sh`](scripts/tokenburn-sync.sh) does the rsync for both providers.
+Copy it to your local machine, edit the vars at the top (source/destination dirs — both are
+configurable, no `~/.claude` is assumed — plus optional SSH key and per-provider toggles), and
+make it executable:
 
-# Codex session logs → server
-*/15 * * * * rsync -aq --prune-empty-dirs --include='*/' --include='*.jsonl' --exclude='*' /home/LOCALUSER/.codex/sessions/ REMOTEUSER@SERVER:/home/REMOTEUSER/.codex/sessions/ >> /home/LOCALUSER/.tokenburn-sync.log 2>&1
+```bash
+cp scripts/tokenburn-sync.sh ~/tokenburn-sync.sh
+chmod +x ~/tokenburn-sync.sh
+nano ~/tokenburn-sync.sh        # set CLAUDE_SRC/DEST, CODEX_SRC/DEST, SSH_KEY
+~/tokenburn-sync.sh             # test once (it logs to ~/.tokenburn-sync.log)
 ```
 
-Prerequisites: passwordless SSH to the server (`ssh-copy-id REMOTEUSER@SERVER`, or add
-`-e "ssh -i /home/LOCALUSER/.ssh/yourkey"` to the rsync), and test each command by hand once.
-rsync is incremental, so each run only transfers changed logs. codexbar re-scans on each cost
-call (the API caches for 300 s), so no restart is needed on the server.
+Prerequisite: passwordless SSH to the server (`ssh-copy-id REMOTEUSER@SERVER`, or set `SSH_KEY`
+in the script). The destinations must be the dirs mounted into the server's `codexbar-api`
+container. The script skips a provider whose source dir is missing, and rsync is incremental
+(only changed logs transfer). codexbar re-scans on each cost call (the API caches for 300 s), so
+no restart is needed on the server.
+
+Then schedule it (every 15 min — `crontab -e`; cost uses a ~30-day window, so frequent syncing
+isn't needed):
+
+```cron
+*/15 * * * * /home/LOCALUSER/tokenburn-sync.sh
+```
 
 ## Container images & releases
 
