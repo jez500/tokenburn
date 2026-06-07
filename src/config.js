@@ -17,5 +17,6 @@ export function loadConfig(env = process.env) {
     codexbarBin: env.CODEXBAR_BIN || 'codexbar',
     providers,
     oauthProviders: oauthProvidersFromEnv(env),
+    zaiApiKey: env.ZAI_API_KEY || '',
   };
 }

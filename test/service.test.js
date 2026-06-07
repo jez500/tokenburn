@@ -118,3 +118,21 @@ test('getSummary does not throw (stays best-effort) when every provider fails', 
   assert.equal(res.providers.length, 2);
   assert.ok(res.providers.every((p) => p.error));
 });
+
+test('zai enrichment: plan + token cost merge for the "z.ai" config id (emitted as "zai")', async () => {
+  const run = async () => [{ provider: 'zai', source: 'api', usage: { primary: { usedPercent: 10, windowMinutes: 300 } } }];
+  const zai = {
+    fetchPlan: async () => 'GLM Coding Pro',
+    fetchCostRaw: async () => ({
+      provider: 'zai', source: 'zai-api', historyDays: 30, last30DaysCostUSD: null, last30DaysTokens: 1000,
+      daily: [{ date: '2026-06-07', totalCost: null, totalTokens: 1000, modelBreakdowns: [{ modelName: 'GLM-4.7', cost: null, totalTokens: 1000 }] }],
+    }),
+  };
+  const svc = makeService({ providers: ['z.ai'] }, { run, zai });
+  const r = await svc.getSummary(30);
+  const z = r.providers.find((p) => p.provider === 'zai');
+  assert.equal(z.usage.plan, 'GLM Coding Pro');
+  assert.equal(z.cost.usd, null);
+  assert.equal(z.cost.tokens.total, 1000);
+  assert.equal(z.cost.models[0].name, 'GLM-4.7');
+});

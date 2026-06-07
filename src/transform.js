@@ -66,7 +66,8 @@ function aggregateModels(daily) {
       acc.set(m.modelName, cur);
     }
   }
-  return [...acc.values()].sort((a, b) => b.usd - a.usd);
+  // Rank by spend, then tokens (so token-only providers like Z.AI order sensibly).
+  return [...acc.values()].sort((a, b) => b.usd - a.usd || b.tokens - a.tokens);
 }
 
 export function transformCost(raw, days) {
