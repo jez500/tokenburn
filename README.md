@@ -111,6 +111,40 @@ codex/claude, remove them from `CODEXBAR_OAUTH_PROVIDERS`.
 
 See `.env.example` for the full list.
 
+## Syncing Claude/Codex usage
+
+Cost/token data is read from **local CLI logs** on whatever machine you actually run Claude Code
+and the Codex CLI on:
+
+- **Claude:** `~/.claude/projects/**/*.jsonl` — session transcripts with per-message tokens + cost.
+- **Codex:** `~/.codex/sessions/**/*.jsonl` — rollout logs with token-count events.
+
+If you run TokenBurn on a **different host** than where you use the CLIs, those logs aren't there
+and the cost/token figures come back empty. rsync the logs across on a schedule. The remote
+targets must be the dirs mounted into the server's `codexbar-api` container (its user's
+`~/.claude` / `~/.codex`).
+
+> **Don't sync credentials** (`~/.claude/.credentials.json`, `~/.codex/auth.json`) — they
+> auto-rotate, and overwriting them from another host can log a session out. Usage
+> **limits/windows** come live from the providers' APIs (OAuth/API key), not these files; only
+> **cost/tokens** need syncing. Log the server in separately for the windows.
+
+Example crontab entries (every 15 min — `crontab -e`). Replace `LOCALUSER`, `REMOTEUSER`, and
+`SERVER`; cost uses a ~30-day window so frequent syncing isn't needed:
+
+```cron
+# Claude session logs → server
+*/15 * * * * rsync -aq --prune-empty-dirs --include='*/' --include='*.jsonl' --exclude='*' /home/LOCALUSER/.claude/projects/ REMOTEUSER@SERVER:/home/REMOTEUSER/.claude/projects/ >> /home/LOCALUSER/.tokenburn-sync.log 2>&1
+
+# Codex session logs → server
+*/15 * * * * rsync -aq --prune-empty-dirs --include='*/' --include='*.jsonl' --exclude='*' /home/LOCALUSER/.codex/sessions/ REMOTEUSER@SERVER:/home/REMOTEUSER/.codex/sessions/ >> /home/LOCALUSER/.tokenburn-sync.log 2>&1
+```
+
+Prerequisites: passwordless SSH to the server (`ssh-copy-id REMOTEUSER@SERVER`, or add
+`-e "ssh -i /home/LOCALUSER/.ssh/yourkey"` to the rsync), and test each command by hand once.
+rsync is incremental, so each run only transfers changed logs. codexbar re-scans on each cost
+call (the API caches for 300 s), so no restart is needed on the server.
+
 ## Container images & releases
 
 CI (`.github/workflows/ci.yml`) runs the test suites and builds **both** images on every push
