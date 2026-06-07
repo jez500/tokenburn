@@ -80,10 +80,10 @@ Behavior worth knowing:
 
 Two credential models, used together:
 
-**OAuth subscription plans (Claude Code Pro/Max, OpenAI Codex/ChatGPT)** — no API key.
-Log in once on the host (`claude setup-token` and `codex` login), then mount the host
-credential dirs read-write. `docker-compose.yml` mounts `~/.claude` and `~/.codex` into the
-container, which runs as **uid 1000** (the base image's `node` user) so it can read and
+**OAuth subscription plans (Claude Code Pro/Max, OpenAI Codex/ChatGPT, Gemini Code Assist)** — no
+API key. Log in once on the host (`claude setup-token`, `codex` login, `gemini` login), then mount
+the host credential dirs read-write. `docker-compose.yml` mounts `~/.claude` and `~/.codex` into
+the container, which runs as **uid 1000** (the base image's `node` user) so it can read and
 refresh those `600`-mode files. This requires the host user to be uid 1000.
 
 - Usage is fetched with `--source oauth`; tokens self-refresh and persist back to the host
@@ -99,15 +99,23 @@ refresh those `600`-mode files. This requires the host user to be uid 1000.
   breakdown, and a daily token series. Z.AI GLM plans are flat-rate, so its `cost.usd` is `null`
   and the meaningful metric is **tokens** (the dashboard shows tokens, not dollars, for Z.AI).
   If the monitor API is unreachable, Z.AI falls back to codexbar's window data.
+- **Gemini** is **OAuth-only** in codexbar — it rejects API keys (`gemini does not support config
+  API keys`), so a `GEMINI_API_KEY` (a Generative Language *inference* key) is **not** used here.
+  To show Gemini you need a **Gemini Code Assist** login: install the `gemini` CLI, run it on the
+  host to authenticate, then mount `~/.gemini` into the `codexbar-api` container (add
+  `- ${HOME}/.gemini:/home/node/.gemini` to its `volumes`). Without that login Gemini errors and
+  is hidden from the dashboard. A bare pay-as-you-go API key has no usage endpoint Google exposes
+  to it, so it cannot surface Gemini usage at all.
 - `CODEXBAR_OAUTH_PROVIDERS` (default `claude,codex`) decides each provider's auth mode:
   providers in the list use the OAuth/mount path; others use the API-key path.
 - If Claude ever returns a `user:profile` scope error, run `claude setup-token` on the host to
   mint a scoped token.
 
-**API-key providers** — set the matching env var (`GEMINI_API_KEY`, `ZAI_API_KEY`, or the
+**API-key providers** — set the matching env var (`ZAI_API_KEY`, or the
 `OPENAI_ADMIN_KEY`/`ANTHROPIC_ADMIN_KEY` admin keys). These are provisioned via
 `codexbar config set-api-key` at boot and queried with `--source api`. To use admin keys for
-codex/claude, remove them from `CODEXBAR_OAUTH_PROVIDERS`.
+codex/claude, remove them from `CODEXBAR_OAUTH_PROVIDERS`. (Gemini is **not** an API-key provider
+— see the Gemini note above; it requires the Code Assist OAuth login.)
 
 See `.env.example` for the full list.
 
