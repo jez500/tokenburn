@@ -86,6 +86,11 @@ the host credential dirs read-write. `docker-compose.yml` mounts `~/.claude` and
 the container, which runs as **uid 1000** (the base image's `node` user) so it can read and
 refresh those `600`-mode files. This requires the host user to be uid 1000.
 
+For **headless deployments** (e.g. Kubernetes, where no host process keeps the tokens fresh) the
+image bundles the `claude` and `codex` CLIs so codexbar can refresh the mounted OAuth tokens
+itself. The credential volume must be **writable** by the container's user so the rotated tokens
+persist; if a token's *refresh* token has already lapsed, log in once more to seed a fresh one.
+
 - Usage is fetched with `--source oauth`; tokens self-refresh and persist back to the host
   files. `/v1/usage` and `/v1/summary` report each plan's percent-used and reset windows.
 - Dollar cost (`/v1/cost`, `/v1/summary`) is available for **Claude and Codex** (codexbar reads

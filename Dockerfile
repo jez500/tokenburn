@@ -34,6 +34,12 @@ COPY --from=codexbar /opt/codexbar /usr/local/bin/codexbar
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
+# Bundle the Claude + Codex CLIs so codexbar can do delegated OAuth token refresh
+# in headless deployments (e.g. Kubernetes), where no host process keeps the
+# mounted ~/.claude / ~/.codex tokens fresh. Without these, short-lived tokens
+# expire and the provider drops off the dashboard.
+RUN npm install -g @anthropic-ai/claude-code @openai/codex && npm cache clean --force
+
 COPY src ./src
 COPY entrypoint.sh ./entrypoint.sh
 RUN chmod +x entrypoint.sh
