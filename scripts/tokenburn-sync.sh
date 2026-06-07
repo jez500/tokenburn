@@ -39,10 +39,11 @@ set -uo pipefail
 
 log() { printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"; }
 
-# -a without owner/group: don't attempt chown/chgrp on the remote (avoids errors
-# when the remote user isn't root or uids/gids differ). Add --no-perms too if you
-# hit permission errors.
-rsync_opts=(-rlptD --no-owner --no-group --prune-empty-dirs --include='*/' --include='*.jsonl' --exclude='*')
+# Sync contents only — no owner/group/permission metadata. This avoids
+# chown/chgrp/chmod errors on remotes where the user isn't root, uids/gids
+# differ, or the target filesystem doesn't support them (e.g. SMB/CIFS mounts).
+# Remote files just take the destination's default perms; codexbar only reads them.
+rsync_opts=(-rltD --no-owner --no-group --no-perms --prune-empty-dirs --include='*/' --include='*.jsonl' --exclude='*')
 [ -n "${SSH_KEY}" ] && rsync_opts+=(-e "ssh -i ${SSH_KEY}")
 
 rc=0
