@@ -67,7 +67,8 @@ function utcDateKey(ms) {
 
 export function buildSpend14(daily, now = Date.now(), days = 14) {
   if (!Array.isArray(daily) || daily.length === 0) return null;
-  const byDate = new Map(daily.map((d) => [d.date, d.usd ?? 0]));
+  // Spend in $ where available (Claude/Codex); tokens for flat-rate providers (Z.AI).
+  const byDate = new Map(daily.map((d) => [d.date, d.usd ?? d.tokens ?? 0]));
   const today = new Date(now);
   const base = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
   const out = [];
@@ -81,7 +82,7 @@ export function deriveToday(daily, now = Date.now()) {
   if (!Array.isArray(daily) || daily.length === 0) return null;
   const key = utcDateKey(now);
   const e = daily.find((d) => d.date === key);
-  return e ? { usd: e.usd ?? 0, tokens: e.tokens ?? 0 } : null;
+  return e ? { usd: e.usd ?? null, tokens: e.tokens ?? 0 } : null;
 }
 
 export function statusFromPct(p) {
@@ -98,8 +99,14 @@ export function prettyModel(name) {
 
 export function modelsFromCost(cost, topN = 4) {
   if (!cost || !Array.isArray(cost.models) || cost.models.length === 0) return null;
-  const total = cost.models.reduce((a, m) => a + (m.usd || 0), 0) || 1;
-  return cost.models.slice(0, topN).map((m) => ({ name: prettyModel(m.name), pct: ((m.usd || 0) / total) * 100 }));
+  // Share by spend when there's any $; otherwise by tokens (flat-rate providers).
+  const usdTotal = cost.models.reduce((a, m) => a + (m.usd || 0), 0);
+  const useTokens = usdTotal <= 0;
+  const total = (useTokens ? cost.models.reduce((a, m) => a + (m.tokens || 0), 0) : usdTotal) || 1;
+  return cost.models.slice(0, topN).map((m) => ({
+    name: prettyModel(m.name),
+    pct: ((useTokens ? m.tokens || 0 : m.usd || 0) / total) * 100,
+  }));
 }
 
 const WEEK_MINUTES = 10080;
@@ -149,7 +156,10 @@ export function mapProvider(entry, now = Date.now()) {
     models: modelsFromCost(cost),
     cost: {
       today: cost ? deriveToday(cost.daily, now) : null,
-      last30: cost && cost.usd != null ? { usd: cost.usd, tokens: cost.tokens?.total ?? 0 } : null,
+      // Present when there's $ (Claude/Codex) or tokens (Z.AI). usd may be null.
+      last30: cost && (cost.usd != null || cost.tokens?.total != null)
+        ? { usd: cost.usd ?? null, tokens: cost.tokens?.total ?? 0 }
+        : null,
     },
     spend14: cost ? buildSpend14(cost.daily, now) : null,
   };

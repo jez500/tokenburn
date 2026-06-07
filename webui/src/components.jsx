@@ -13,7 +13,7 @@ export function Bar({ value, accent, tone, height = 8 }) {
   );
 }
 
-export function MiniBars({ data, accent, height = 36 }) {
+export function MiniBars({ data, accent, height = 36, fmt = fmtUSD }) {
   const max = Math.max(...data, 0.0001);
   return (
     <div className="minibars" style={{ height }}>
@@ -22,7 +22,7 @@ export function MiniBars({ data, accent, height = 36 }) {
           key={i}
           className="minibars__col"
           style={{ height: Math.max(2, (d / max) * 100) + '%', background: accent, opacity: i === data.length - 1 ? 1 : 0.34 }}
-          title={fmtUSD(d)}
+          title={fmt(d)}
         />
       ))}
     </div>
@@ -132,38 +132,48 @@ export function ProviderDetail({ p, dense }) {
         </>
       )}
 
-      <div className="rule" />
-      <div className="cost">
-        <div className="sec-label">Cost</div>
-        {(p.cost.today || p.cost.last30 || p.spend14) ? (
+      {(() => {
+        const ref = p.cost.last30 || p.cost.today;
+        const tokenMode = !!ref && ref.usd == null; // flat-rate provider (e.g. Z.AI) → tokens, not $
+        const val = (c) => (c.usd != null ? fmtUSD(c.usd) : fmtTok(c.tokens));
+        const sub = (c) => (c.usd != null ? fmtTok(c.tokens) + ' tok' : 'tokens');
+        return (
           <>
-            <div className="cost__rows">
-              {p.cost.today && (
-                <div className="cost__row">
-                  <span className="mono faint">Today</span>
-                  <span className="mono">{fmtUSD(p.cost.today.usd)}</span>
-                  <span className="mono faint">{fmtTok(p.cost.today.tokens)} tok</span>
-                </div>
-              )}
-              {p.cost.last30 && (
-                <div className="cost__row">
-                  <span className="mono faint">Last 30 days</span>
-                  <span className="mono">{fmtUSD(p.cost.last30.usd)}</span>
-                  <span className="mono faint">{fmtTok(p.cost.last30.tokens)} tok</span>
-                </div>
+            <div className="rule" />
+            <div className="cost">
+              <div className="sec-label">{tokenMode ? 'Tokens' : 'Cost'}</div>
+              {(p.cost.today || p.cost.last30 || p.spend14) ? (
+                <>
+                  <div className="cost__rows">
+                    {p.cost.today && (
+                      <div className="cost__row">
+                        <span className="mono faint">Today</span>
+                        <span className="mono">{val(p.cost.today)}</span>
+                        <span className="mono faint">{sub(p.cost.today)}</span>
+                      </div>
+                    )}
+                    {p.cost.last30 && (
+                      <div className="cost__row">
+                        <span className="mono faint">Last 30 days</span>
+                        <span className="mono">{val(p.cost.last30)}</span>
+                        <span className="mono faint">{sub(p.cost.last30)}</span>
+                      </div>
+                    )}
+                  </div>
+                  {p.spend14 && (
+                    <div className="cost__chart">
+                      <div className="sec-label faint">{tokenMode ? 'Daily tokens · 14d' : 'Daily spend · 14d'}</div>
+                      <MiniBars data={p.spend14} accent={p.accent} fmt={tokenMode ? ((n) => fmtTok(n) + ' tok') : fmtUSD} />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="cost__none mono faint">No local cost data — codexbar reads cost from Claude/Codex CLI logs only.</div>
               )}
             </div>
-            {p.spend14 && (
-              <div className="cost__chart">
-                <div className="sec-label faint">Daily spend · 14d</div>
-                <MiniBars data={p.spend14} accent={p.accent} />
-              </div>
-            )}
           </>
-        ) : (
-          <div className="cost__none mono faint">No local cost data — codexbar reads cost from Claude/Codex CLI logs only.</div>
-        )}
-      </div>
+        );
+      })()}
     </div>
   );
 }
@@ -198,10 +208,10 @@ export function ProviderCard({ p, onOpen, active }) {
           </div>
           <div className="pcard__foot">
             <div className="pcard__cost">
-              <span className="num">{p.cost.last30 ? fmtUSD(p.cost.last30.usd) : '—'}</span>
-              <span className="faint mono">30d</span>
+              <span className="num">{p.cost.last30 ? (p.cost.last30.usd != null ? fmtUSD(p.cost.last30.usd) : fmtTok(p.cost.last30.tokens)) : '—'}</span>
+              <span className="faint mono">{p.cost.last30 && p.cost.last30.usd == null ? 'tok · 30d' : '30d'}</span>
             </div>
-            {p.spend14 && <MiniBars data={p.spend14} accent={p.accent} height={26} />}
+            {p.spend14 && <MiniBars data={p.spend14} accent={p.accent} height={26} fmt={p.cost.last30 && p.cost.last30.usd == null ? ((n) => fmtTok(n) + ' tok') : fmtUSD} />}
           </div>
         </>
       )}

@@ -143,3 +143,27 @@ test('mapProvider keeps Claude/Codex ordering (5h in primary, weekly in secondar
   assert.equal(vm.session.pct, 34); // 5h primary
   assert.equal(vm.weekly.pct, 8);   // first 1-week window (secondary), not tertiary
 });
+
+test('mapProvider handles token-based (Z.AI) cost: no $, tokens + token-share models + sparkline', () => {
+  const entry = {
+    provider: 'zai',
+    usage: { plan: 'GLM Coding Pro', windows: { primary: { usedPercent: 13, windowMinutes: 300, resetsAt: '2026-06-07T18:00:00Z' } } },
+    cost: {
+      usd: null,
+      tokens: { total: 316335096 },
+      daily: [{ date: '2026-06-06', usd: null, tokens: 2500, models: [] }],
+      models: [
+        { name: 'GLM-4.7', usd: 0, tokens: 190430808 },
+        { name: 'GLM-5.1', usd: 0, tokens: 125642163 },
+      ],
+    },
+  };
+  const vm = mapProvider(entry, NOW);
+  assert.equal(vm.plan, 'GLM Coding Pro');
+  assert.equal(vm.cost.last30.usd, null);
+  assert.equal(vm.cost.last30.tokens, 316335096);
+  assert.equal(vm.models[0].name, 'GLM-4.7');         // ranked by tokens
+  assert.ok(Math.round(vm.models[0].pct) === 60);     // 190M/316M ≈ 60%
+  assert.ok(Array.isArray(vm.spend14) && vm.spend14.length === 14);
+  assert.equal(vm.spend14[13], 2500);                 // today's tokens populate the sparkline
+});
