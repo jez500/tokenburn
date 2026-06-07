@@ -169,11 +169,13 @@ curl -H "Authorization: Bearer $API_TOKEN" \
 
 ### GET /v1/cost
 
-Reshaped cost over codexbar's local-log window. **Only Claude and Codex** report cost
-(codexbar reads their native session logs); other providers are omitted from `provider=all`,
-or — if requested explicitly — return an `error` entry. Codex cost is derived from
-**Codex CLI** session logs (`~/.codex/sessions`), so it appears only if you've used the Codex
-CLI locally within the ~30-day window; otherwise its cost figures come back `null`.
+Reshaped cost over a ~30-day window. **Claude and Codex** report dollar cost (codexbar reads
+their native session logs); Codex cost is derived from **Codex CLI** session logs
+(`~/.codex/sessions`), so it appears only if you've used the Codex CLI locally within the window,
+otherwise `null`. **Z.AI** is sourced from the Z.AI usage monitor API (when `ZAI_API_KEY` is set):
+its `usd` is `null` (GLM plans are flat-rate) but `tokens`, `daily`, and `models` are populated
+from real token usage. Providers with no cost data are omitted from `provider=all`, or — if
+requested explicitly — return an `error` entry.
 
 | | |
 |---|---|
